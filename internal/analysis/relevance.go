@@ -16,7 +16,7 @@ func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]
 	for name, fn := range reachableFuncs {
 		relevant := make(map[string]bool)
 
-		// 1. Seed with variables directly present in Return statements
+		// 1. Seed with variables directly present in Return statements and control guards
 		for _, ret := range fn.Returns {
 			for _, v := range ret.Vars {
 				relevant[v] = true
@@ -27,6 +27,19 @@ func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]
 					if op.Var != "" && strings.Contains(ret.Raw, op.Var) {
 						relevant[op.Var] = true
 					}
+				}
+			}
+		}
+
+		if len(fn.Returns) > 0 {
+			for _, wl := range fn.WhileLoops {
+				for _, cv := range wl.CondVars {
+					relevant[cv] = true
+				}
+			}
+			for _, ig := range fn.IfGuards {
+				for _, cv := range ig.CondVars {
+					relevant[cv] = true
 				}
 			}
 		}
@@ -77,16 +90,6 @@ func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]
 							}
 						}
 					}
-				}
-			}
-		}
-
-		// 3. If a while loop condition guards a return or early exit
-		for _, wl := range fn.WhileLoops {
-			hasReturnInside := len(fn.Returns) > 0
-			if hasReturnInside {
-				for _, cv := range wl.CondVars {
-					relevant[cv] = true
 				}
 			}
 		}

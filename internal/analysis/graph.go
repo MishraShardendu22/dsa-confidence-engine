@@ -15,6 +15,7 @@ type FunctionNode struct {
 	VarReads     []VarReadNode         `json:"var_reads"`
 	Operations   []OperationNode       `json:"operations"`
 	WhileLoops   []WhileLoopNode       `json:"while_loops"`
+	IfGuards     []IfGuardNode         `json:"if_guards"`
 	Reachable    bool                  `json:"-"`
 }
 
@@ -65,6 +66,11 @@ type WhileLoopNode struct {
 	LineNo   int      `json:"lineno"`
 	CondVars []string `json:"cond_vars"`
 	Expr     string   `json:"expr"`
+}
+
+type IfGuardNode struct {
+	LineNo   int      `json:"lineno"`
+	CondVars []string `json:"cond_vars"`
 }
 
 // ComputeReachableFunctions performs BFS from entrypoint to find reachable functions.

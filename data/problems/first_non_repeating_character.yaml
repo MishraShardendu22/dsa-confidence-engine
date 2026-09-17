@@ -1,0 +1,44 @@
+id: first_non_repeating_character
+title: First Non-Repeating Character
+description: "Given a string s, return the first character that does not repeat anywhere in the string, or None if all characters repeat or the string is empty."
+language: python
+entrypoint: first_non_repeating_character
+entrypoint_aliases:
+  - firstUniqChar
+  - first_uniq_char
+  - first_non_repeating
+  - solve
+starter_code: |
+  def first_non_repeating_character(s: str) -> str | None:
+      # Return first non-repeating character in s, or None.
+      pass
+tests:
+  - id: "fnr_basic"
+    input: "{\"s\": \"career\"}"
+    expected_output: "c"
+  - id: "fnr_all_repeats"
+    input: "{\"s\": \"aabb\"}"
+    expected_output: "None"
+  - id: "fnr_whitespace"
+    input: "{\"s\": \" a \"}"
+    expected_output: "a"
+  - id: "fnr_empty"
+    input: "{\"s\": \"\"}"
+    expected_output: "None"
+  - id: "fnr_leetcode"
+    input: "{\"s\": \"leetcode\"}"
+    expected_output: "l"
+  - id: "fnr_loveleetcode"
+    input: "{\"s\": \"loveleetcode\"}"
+    expected_output: "v"
+accepted_strategies:
+  - hash_frequency
+  - counter
+  - repeated_count_scan
+required_concepts: []
+optional_concepts:
+  - strings
+  - arrays
+primary_concepts:
+  - hashmap
+  - frequency_count

@@ -27,7 +27,8 @@ class ASTExtractor(ast.NodeVisitor):
             "var_mutations": [],
             "var_reads": [],
             "operations": [],
-            "while_loops": []
+            "while_loops": [],
+            "if_guards": []
         }
         self.functions.append(func_info)
         self.func_stack.append(func_info)
@@ -358,6 +359,15 @@ class ASTExtractor(ast.NodeVisitor):
             self.loop_depth -= 1
         else:
             self.generic_visit(node)
+
+    def visit_If(self, node):
+        if self.current_func:
+            cond_vars = list(self._collect_names(node.test))
+            self.current_func["if_guards"].append({
+                "lineno": node.lineno,
+                "cond_vars": cond_vars
+            })
+        self.generic_visit(node)
 
     def visit_For(self, node):
         if self.current_func:

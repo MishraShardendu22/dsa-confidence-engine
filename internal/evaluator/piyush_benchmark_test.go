@@ -538,3 +538,111 @@ func TestPiyushBenchmark_MismatchesAndFailures(t *testing.T) {
 		}
 	})
 }
+
+func TestPiyushBenchmark_Question4Expansion(t *testing.T) {
+	eval, probMap := setupPiyushBenchmarkEvaluator(t)
+	ctx := context.Background()
+
+	prob, ok := probMap["first_non_repeating_character"]
+	if !ok {
+		t.Fatalf("first_non_repeating_character problem not loaded")
+	}
+
+	// 1. Implementation Family 1: Hash Map Frequency Count
+	t.Run("first non-repeating character with dict get -> ACCEPT", func(t *testing.T) {
+		code := `def first_non_repeating_character(s):
+    counts = {}
+    for c in s:
+        counts[c] = counts.get(c, 0) + 1
+    for c in s:
+        if counts[c] == 1:
+            return c
+    return None`
+
+		explanation := "I count character frequencies using a hashmap dictionary, then scan the string to find the first character with frequency count 1."
+
+		sub := model.Submission{
+			ProblemID:   "first_non_repeating_character",
+			SourceCode:  code,
+			Explanation: explanation,
+		}
+
+		res, err := eval.Evaluate(ctx, sub, prob)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if res.TestResult != model.TestStatusPass {
+			t.Fatalf("expected PASS, got %s (diags: %v)", res.TestResult, res.Diagnostics)
+		}
+		if res.Decision != model.DecisionAccept {
+			t.Errorf("expected ACCEPT, got %s (score: %f, diags: %v)", res.Decision, res.FidelityScore, res.Diagnostics)
+		}
+		if res.FidelityScore < 0.95 {
+			t.Errorf("expected score >= 0.95, got %f", res.FidelityScore)
+		}
+	})
+
+	// 2. Implementation Family 2: collections.Counter
+	t.Run("first non-repeating character with collections.Counter -> ACCEPT", func(t *testing.T) {
+		code := `from collections import Counter
+def first_non_repeating_character(s):
+    counts = Counter(s)
+    for c in s:
+        if counts[c] == 1:
+            return c
+    return None`
+
+		explanation := "I tally character frequencies with collections.Counter and return the first character with count equal to one."
+
+		sub := model.Submission{
+			ProblemID:   "first_non_repeating_character",
+			SourceCode:  code,
+			Explanation: explanation,
+		}
+
+		res, err := eval.Evaluate(ctx, sub, prob)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if res.TestResult != model.TestStatusPass {
+			t.Fatalf("expected PASS, got %s (diags: %v)", res.TestResult, res.Diagnostics)
+		}
+		if res.Decision != model.DecisionAccept {
+			t.Errorf("expected ACCEPT, got %s (score: %f, diags: %v)", res.Decision, res.FidelityScore, res.Diagnostics)
+		}
+		if res.FidelityScore < 0.95 {
+			t.Errorf("expected score >= 0.95, got %f", res.FidelityScore)
+		}
+	})
+
+	// 3. Implementation Family 3: Repeated str.count() Scan (Correct but O(N^2) inefficient)
+	t.Run("first non-repeating character with repeated count scan -> ACCEPT", func(t *testing.T) {
+		code := `def first_non_repeating_character(s):
+    for c in s:
+        if s.count(c) == 1:
+            return c
+    return None`
+
+		explanation := "I iterate through the string and check character frequency count using s.count for each character."
+
+		sub := model.Submission{
+			ProblemID:   "first_non_repeating_character",
+			SourceCode:  code,
+			Explanation: explanation,
+		}
+
+		res, err := eval.Evaluate(ctx, sub, prob)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		if res.TestResult != model.TestStatusPass {
+			t.Fatalf("expected PASS, got %s (diags: %v)", res.TestResult, res.Diagnostics)
+		}
+		if res.Decision != model.DecisionAccept {
+			t.Errorf("expected ACCEPT, got %s (score: %f, diags: %v)", res.Decision, res.FidelityScore, res.Diagnostics)
+		}
+	})
+}
