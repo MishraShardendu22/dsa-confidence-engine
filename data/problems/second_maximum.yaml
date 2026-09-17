@@ -1,0 +1,49 @@
+id: second_maximum
+title: Second Maximum / Top Distinct Value
+description: "Given an integer list nums, return the second strictly distinct maximum value, or None if fewer than two distinct values exist."
+language: python
+entrypoint: second_maximum
+entrypoint_aliases:
+  - secondMaximum
+  - second_max
+  - solve
+starter_code: |
+  def second_maximum(nums: list[int]) -> int | None:
+      # Return the second largest DISTINCT value in nums, or None.
+      pass
+tests:
+  - id: "sm_basic"
+    input: "{\"nums\": [10, 20, 4, 45, 99]}"
+    expected_output: "45"
+  - id: "sm_duplicate_max"
+    input: "{\"nums\": [10, 10, 5]}"
+    expected_output: "5"
+  - id: "sm_all_equal"
+    input: "{\"nums\": [7, 7, 7]}"
+    expected_output: "None"
+  - id: "sm_singleton"
+    input: "{\"nums\": [42]}"
+    expected_output: "None"
+  - id: "sm_empty"
+    input: "{\"nums\": []}"
+    expected_output: "None"
+  - id: "sm_negatives"
+    input: "{\"nums\": [-10, -5, -20]}"
+    expected_output: "-10"
+  - id: "sm_negative_duplicates"
+    input: "{\"nums\": [-5, -5]}"
+    expected_output: "None"
+  - id: "sm_two_elements"
+    input: "{\"nums\": [1, 2]}"
+    expected_output: "1"
+accepted_strategies:
+  - single_pass_iterative
+  - sort_indexing
+  - set_reduction
+required_concepts: []
+optional_concepts:
+  - arrays
+primary_concepts:
+  - arrays
+  - sorting
+  - hashset

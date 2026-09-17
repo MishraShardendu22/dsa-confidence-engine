@@ -22,10 +22,13 @@ tests:
     expected_output: "[0, 1]"
 accepted_strategies:
   - hashmap_two_sum
-required_concepts:
-  - hashmap
+  - two_pointers_two_sum
+  - brute_force_two_sum
+required_concepts: []
 optional_concepts:
   - arrays
-  - iteration
+  - sorting
 primary_concepts:
   - hashmap
+  - two_pointers
+  - brute_force

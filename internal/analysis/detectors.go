@@ -36,6 +36,7 @@ func NewDetectorRegistry() *DetectorRegistry {
 			&BFSDetector{},
 			&DPDetector{},
 			&ArraysDetector{},
+			&BruteForceDetector{},
 		},
 	}
 }
@@ -101,17 +102,19 @@ func (d *HashMapDetector) Detect(
 					OutputRelevant: rel,
 				})
 			case "dict_read":
-				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
-				if rel {
-					mapOutputRelevant = true
+				if dictVars[op.Var] {
+					rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+					if rel {
+						mapOutputRelevant = true
+					}
+					mapEvidence = append(mapEvidence, model.Evidence{
+						Type:           "map_read",
+						Line:           op.LineNo,
+						Description:    fmt.Sprintf("Subscript lookup on map '%s'", op.Var),
+						Reachable:      isReachable,
+						OutputRelevant: rel,
+					})
 				}
-				mapEvidence = append(mapEvidence, model.Evidence{
-					Type:           "map_read",
-					Line:           op.LineNo,
-					Description:    fmt.Sprintf("Subscript lookup on map '%s'", op.Var),
-					Reachable:      isReachable,
-					OutputRelevant: rel,
-				})
 			case "dict_get":
 				dictVars[op.Var] = true
 				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
@@ -147,6 +150,61 @@ func (d *HashMapDetector) Detect(
 						OutputRelevant: rel,
 					})
 				}
+			case "counter_call":
+				rel := isReachable
+				if op.Var != "" && op.Var != "Counter" && op.Var != "collections.Counter" {
+					rel = isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+				}
+				if rel {
+					mapOutputRelevant = true
+					freqOutputRelevant = true
+				}
+				mapEvidence = append(mapEvidence, model.Evidence{
+					Type:           "counter_call",
+					Line:           op.LineNo,
+					Description:    "collections.Counter frequency mapping invoked",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+				freqEvidence = append(freqEvidence, model.Evidence{
+					Type:           "collections_counter",
+					Line:           op.LineNo,
+					Description:    "collections.Counter frequency counter instance",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			case "dict_comp":
+				rel := isReachable
+				if rel {
+					mapOutputRelevant = true
+					freqOutputRelevant = true
+				}
+				mapEvidence = append(mapEvidence, model.Evidence{
+					Type:           "dict_comprehension",
+					Line:           op.LineNo,
+					Description:    "Dictionary comprehension mapping constructed",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+				freqEvidence = append(freqEvidence, model.Evidence{
+					Type:           "frequency_dict_comprehension",
+					Line:           op.LineNo,
+					Description:    "Dictionary comprehension frequency mapping",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			case "count_call":
+				rel := isReachable
+				if rel {
+					freqOutputRelevant = true
+				}
+				freqEvidence = append(freqEvidence, model.Evidence{
+					Type:           "count_scan",
+					Line:           op.LineNo,
+					Description:    fmt.Sprintf(".count() scan invoked on '%s'", op.Var),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
 			}
 		}
 
@@ -216,7 +274,10 @@ func (d *HashSetDetector) Detect(
 		for _, op := range fn.Operations {
 			switch op.Type {
 			case "set_alloc":
-				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+				rel := isReachable
+				if op.Var != "" && op.Var != "<return>" {
+					rel = isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+				}
 				if rel {
 					outRel = true
 				}
@@ -236,6 +297,18 @@ func (d *HashSetDetector) Detect(
 					Type:           "set_add",
 					Line:           op.LineNo,
 					Description:    fmt.Sprintf("Element addition to set '%s'", op.Var),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			case "set_remove":
+				rel := isReachable && (op.Var == "" || IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var))
+				if rel {
+					outRel = true
+				}
+				evidence = append(evidence, model.Evidence{
+					Type:           "set_remove",
+					Line:           op.LineNo,
+					Description:    fmt.Sprintf("Element removal/reduction on set '%s'", op.Var),
 					Reachable:      isReachable,
 					OutputRelevant: rel,
 				})
@@ -277,7 +350,7 @@ func (d *SortingDetector) Detect(
 
 		for _, op := range fn.Operations {
 			if op.Type == "sorting_call" {
-				rel := isReachable
+				rel := isReachable && (op.Var == "" || IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var))
 				if rel {
 					outRel = true
 				}
@@ -1066,6 +1139,55 @@ func (d *ArraysDetector) Detect(
 				OutputRelevant: arrayOutputRelevant,
 				Confidence:     1.0,
 				Role:           model.RoleAuxiliary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 14. Brute Force / Nested Loop Detector
+type BruteForceDetector struct{}
+
+func (d *BruteForceDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		outRel := false
+
+		for _, op := range fn.Operations {
+			if op.Type == "nested_loop" {
+				rel := isReachable
+				if rel {
+					outRel = true
+				}
+				evidence = append(evidence, model.Evidence{
+					Type:           "nested_loops",
+					Line:           op.LineNo,
+					Description:    "Nested iterative loops (brute force pairwise scan)",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+		}
+
+		if len(evidence) > 0 {
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "brute_force",
+				Name:           "Brute Force",
+				Category:       "arrays",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
 				Status:         "DETECTED",
 			})
 		}

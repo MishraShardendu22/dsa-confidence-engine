@@ -215,14 +215,26 @@ func (s *Scorer) Score(
 	// 2. Evaluate actual concepts that were NOT claimed
 	var extraPenalty float64
 	for _, a := range actual {
-		if !a.Reachable {
+		if !a.Reachable || !a.OutputRelevant {
 			continue
 		}
 		if claimedMatchedActuals[a.ConceptID] {
 			continue
 		}
 
-		if primarySet[a.ConceptID] {
+		// Check if a belongs to the same ontological family as a claimed concept
+		isFamilyMatched := false
+		for _, c := range claimed {
+			if s.ontology != nil && (s.ontology.IsAncestor(c.ConceptID, a.ConceptID) || s.ontology.IsAncestor(a.ConceptID, c.ConceptID)) {
+				isFamilyMatched = true
+				break
+			}
+		}
+		if isFamilyMatched {
+			continue
+		}
+
+		if primarySet[a.ConceptID] && !isGenericConcept(a.ConceptID) {
 			extraPenalty += 0.15
 			extra = append(extra, model.ConceptMatch{
 				ConceptID:      a.ConceptID,

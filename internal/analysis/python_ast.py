@@ -7,6 +7,7 @@ class ASTExtractor(ast.NodeVisitor):
         self.functions = []
         self.global_calls = []
         self.func_stack = []
+        self.loop_depth = 0
 
     @property
     def current_func(self):
@@ -68,12 +69,23 @@ class ASTExtractor(ast.NodeVisitor):
         if self.current_func:
             self.current_func["calls"].append(call_data)
 
-            if call_name in ("sort", "sorted") or call_name.endswith(".sort"):
+            if call_name.endswith(".sort"):
+                obj = call_name.split(".")[0]
                 self.current_func["operations"].append({
                     "type": "sorting_call",
                     "lineno": node.lineno,
-                    "target": call_name
+                    "target": call_name,
+                    "var": obj
                 })
+            elif call_name in ("sort", "sorted"):
+                has_op = any(op.get("type") == "sorting_call" and op.get("lineno") == node.lineno for op in self.current_func["operations"])
+                if not has_op:
+                    self.current_func["operations"].append({
+                        "type": "sorting_call",
+                        "lineno": node.lineno,
+                        "target": call_name,
+                        "var": ""
+                    })
             elif "heapq" in call_name or call_name in ("heappush", "heappop", "heapify"):
                 self.current_func["operations"].append({
                     "type": "heap_op",
@@ -111,6 +123,32 @@ class ASTExtractor(ast.NodeVisitor):
                 obj = call_name.split(".")[0]
                 self.current_func["operations"].append({
                     "type": "set_add",
+                    "lineno": node.lineno,
+                    "var": obj
+                })
+            elif call_name.endswith(".remove") or call_name.endswith(".discard"):
+                obj = call_name.split(".")[0]
+                self.current_func["operations"].append({
+                    "type": "set_remove",
+                    "lineno": node.lineno,
+                    "var": obj
+                })
+            elif call_name == "set":
+                self.current_func["operations"].append({
+                    "type": "set_alloc",
+                    "lineno": node.lineno,
+                    "var": "<set>"
+                })
+            elif call_name in ("Counter", "collections.Counter") or call_name.endswith(".Counter"):
+                self.current_func["operations"].append({
+                    "type": "counter_call",
+                    "lineno": node.lineno,
+                    "var": call_name
+                })
+            elif call_name.endswith(".count"):
+                obj = call_name.split(".")[0]
+                self.current_func["operations"].append({
+                    "type": "count_call",
                     "lineno": node.lineno,
                     "var": obj
                 })
@@ -184,6 +222,13 @@ class ASTExtractor(ast.NodeVisitor):
                             "lineno": node.lineno,
                             "var": var_name
                         })
+                    elif isinstance(node.value, ast.Call) and self._get_name(node.value.func) in ("sorted", "sort"):
+                        self.current_func["operations"].append({
+                            "type": "sorting_call",
+                            "lineno": node.lineno,
+                            "target": self._get_name(node.value.func),
+                            "var": var_name
+                        })
 
                     self.current_func["var_defs"][var_name] = {
                         "lineno": node.lineno,
@@ -206,6 +251,15 @@ class ASTExtractor(ast.NodeVisitor):
                         "var": sub_var
                     })
 
+        self.generic_visit(node)
+
+    def visit_DictComp(self, node):
+        if self.current_func:
+            self.current_func["operations"].append({
+                "type": "dict_comp",
+                "lineno": node.lineno,
+                "var": "<dict_comp>"
+            })
         self.generic_visit(node)
 
     def visit_AugAssign(self, node):
@@ -282,6 +336,12 @@ class ASTExtractor(ast.NodeVisitor):
 
     def visit_While(self, node):
         if self.current_func:
+            self.loop_depth += 1
+            if self.loop_depth >= 2:
+                self.current_func["operations"].append({
+                    "type": "nested_loop",
+                    "lineno": node.lineno
+                })
             cond_vars = list(self._collect_names(node.test))
             cond_expr = ""
             try:
@@ -294,10 +354,19 @@ class ASTExtractor(ast.NodeVisitor):
                 "cond_vars": cond_vars,
                 "expr": cond_expr
             })
-        self.generic_visit(node)
+            self.generic_visit(node)
+            self.loop_depth -= 1
+        else:
+            self.generic_visit(node)
 
     def visit_For(self, node):
         if self.current_func:
+            self.loop_depth += 1
+            if self.loop_depth >= 2:
+                self.current_func["operations"].append({
+                    "type": "nested_loop",
+                    "lineno": node.lineno
+                })
             target_names = list(self._collect_names(node.target))
             iter_names = list(self._collect_names(node.iter))
             self.current_func["operations"].append({
@@ -312,7 +381,10 @@ class ASTExtractor(ast.NodeVisitor):
                     "deps": iter_names,
                     "kind": "for_target"
                 }
-        self.generic_visit(node)
+            self.generic_visit(node)
+            self.loop_depth -= 1
+        else:
+            self.generic_visit(node)
 
 def main():
     try:

@@ -52,3 +52,30 @@
   keywords:
     - in place
     - overwrite
+
+- id: brute_force
+  name: Brute Force
+  parent: arrays
+  description: Exhaustive search evaluating all candidate pairs or permutations.
+  aliases:
+    - brute force
+    - bruteforce
+    - nested loops
+    - nested loop
+    - pairwise scan
+    - check all pairs
+    - all pairs
+    - double loop
+    - two loops
+  keywords:
+    - brute
+    - force
+    - nested
+    - pairs
+    - pairwise
+  code_signals:
+    - nested_loops
+  explanation_examples:
+    - "use a brute force nested loop to check all pairs"
+    - "check every pair of numbers using two loops"
+

@@ -1,0 +1,43 @@
+id: frequency_count
+title: Frequency Count / Character Frequencies
+description: "Given a string s, return a dictionary/mapping of each character to its frequency."
+language: python
+entrypoint: char_frequency
+entrypoint_aliases:
+  - charFrequency
+  - frequency_count
+  - solve
+starter_code: |
+  def char_frequency(s: str) -> dict[str, int]:
+      # Return a dict mapping each character in s to how many times it appears.
+      pass
+tests:
+  - id: "fc_basic"
+    input: "{\"s\": \"career\"}"
+    expected_output: "{\"a\": 1, \"c\": 1, \"e\": 2, \"r\": 2}"
+  - id: "fc_case"
+    input: "{\"s\": \"aA\"}"
+    expected_output: "{\"A\": 1, \"a\": 1}"
+  - id: "fc_whitespace"
+    input: "{\"s\": \"a b c \"}"
+    expected_output: "{\" \": 3, \"a\": 1, \"b\": 1, \"c\": 1}"
+  - id: "fc_repeats"
+    input: "{\"s\": \"aaaa\"}"
+    expected_output: "{\"a\": 4}"
+  - id: "fc_empty"
+    input: "{\"s\": \"\"}"
+    expected_output: "{}"
+  - id: "fc_unicode"
+    input: "{\"s\": \"café ☕\"}"
+    expected_output: "{\" \": 1, \"a\": 1, \"c\": 1, \"f\": 1, \"é\": 1, \"☕\": 1}"
+accepted_strategies:
+  - hash_frequency
+  - counter
+  - nested_scan
+required_concepts: []
+optional_concepts:
+  - arrays
+  - hashset
+primary_concepts:
+  - hashmap
+  - frequency_count

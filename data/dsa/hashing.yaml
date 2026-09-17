@@ -85,6 +85,9 @@
     - tally
     - counter
     - count occurrences
+    - collections.counter
+    - char frequency
+    - character frequency
   keywords:
     - count
     - freq
