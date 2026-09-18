@@ -17,10 +17,15 @@ type Config struct {
 	AcceptThreshold    float64
 	RejustifyThreshold float64
 	EmbeddingEnabled   bool
+	EmbeddingProvider  string
+	EmbeddingEndpoint  string
+	EmbeddingAPIKey    string
 	EmbeddingModel     string
 	LLMEnabled         bool
 	LLMProvider        string
 	LLMEndpoint        string
+	LLMAPIKey          string
+	LLMModel           string
 }
 
 func Load() (*Config, error) {
@@ -34,10 +39,15 @@ func Load() (*Config, error) {
 		AcceptThreshold:    getEnvFloat("ACCEPT_THRESHOLD", 0.95),
 		RejustifyThreshold: getEnvFloat("REJUSTIFY_THRESHOLD", 0.90),
 		EmbeddingEnabled:   getEnvBool("EMBEDDING_ENABLED", true),
+		EmbeddingProvider:  getEnv("EMBEDDING_PROVIDER", "local"),
+		EmbeddingEndpoint:  getEnv("EMBEDDING_ENDPOINT", ""),
+		EmbeddingAPIKey:    getEnv("EMBEDDING_API_KEY", ""),
 		EmbeddingModel:     getEnv("EMBEDDING_MODEL", "local-hashing-embedder"),
 		LLMEnabled:         getEnvBool("LLM_ENABLED", false),
 		LLMProvider:        getEnv("LLM_PROVIDER", "disabled"),
 		LLMEndpoint:        getEnv("LLM_ENDPOINT", ""),
+		LLMAPIKey:          getEnv("LLM_API_KEY", ""),
+		LLMModel:           getEnv("LLM_MODEL", "gpt-4o-mini"),
 	}
 
 	if err := cfg.Validate(); err != nil {

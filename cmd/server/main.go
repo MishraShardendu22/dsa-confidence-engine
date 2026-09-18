@@ -53,31 +53,53 @@ func main() {
 	}
 	log.Printf("[INFO] Loaded %d DSA ontology concepts across %s", len(ontologyRepo.Ontology().AllConcepts()), cfg.OntologyPath)
 
-	// 4. Initialize Local Embedder and Cascade Matcher
+	// 4. Initialize Embedder (Local Hashing or Remote HTTP)
 	var embedder nlp.Embedder
 	if cfg.EmbeddingEnabled {
-		embedder = nlp.NewLocalHashingEmbedder(256)
+		if cfg.EmbeddingProvider == "remote" && cfg.EmbeddingEndpoint != "" {
+			embedder = nlp.NewRemoteHTTPEmbedder(
+				cfg.EmbeddingEndpoint,
+				cfg.EmbeddingAPIKey,
+				cfg.EmbeddingModel,
+				nlp.WithEmbedderFallback(nlp.NewLocalHashingEmbedder(256)),
+			)
+			log.Printf("[INFO] Initialized Remote HTTP Embedder -> %s (model: %s)", cfg.EmbeddingEndpoint, cfg.EmbeddingModel)
+		} else {
+			embedder = nlp.NewLocalHashingEmbedder(256)
+			log.Printf("[INFO] Initialized Local Hashing Embedder (256 dims)")
+		}
 	}
 	matcher, err := nlp.NewCascadeMatcher(ctx, ontologyRepo.Ontology(), embedder, cfg.EmbeddingEnabled)
 	if err != nil {
 		log.Fatalf("[FATAL] failed to initialize cascade matcher: %v", err)
 	}
 
-	// 5. Initialize Subprocess Test Runner
+	// 5. Initialize LLM Escalator (Disabled or Remote HTTP)
+	var llmEscalator nlp.LLMEscalator = &nlp.DisabledLLMEscalator{}
+	if cfg.LLMEnabled && cfg.LLMProvider == "remote" && cfg.LLMEndpoint != "" {
+		llmEscalator = nlp.NewRemoteLLMEscalator(
+			cfg.LLMEndpoint,
+			cfg.LLMAPIKey,
+			cfg.LLMModel,
+		)
+		log.Printf("[INFO] Initialized Remote LLM Escalator -> %s (model: %s)", cfg.LLMEndpoint, cfg.LLMModel)
+	}
+
+	// 6. Initialize Subprocess Test Runner
 	testRunner := runner.NewLocalRunner(cfg.RunnerTimeoutMs)
 
-	// 6. Initialize Point A Python Analyzer
+	// 7. Initialize Point A Python Analyzer
 	pythonAnalyzer := analysis.NewPythonAnalyzer("")
 
-	// 7. Initialize Fidelity Scorer
+	// 8. Initialize Fidelity Scorer
 	thresholds := fidelity.Thresholds{
 		AcceptThreshold:    cfg.AcceptThreshold,
 		RejustifyThreshold: cfg.RejustifyThreshold,
 	}
 	scorer := fidelity.NewScorer(ontologyRepo.Ontology(), thresholds)
 
-	// 8. Initialize Core Evaluator Engine
-	evalEngine := evaluator.NewEvaluator(testRunner, pythonAnalyzer, matcher, scorer, nil)
+	// 9. Initialize Core Evaluator Engine
+	evalEngine := evaluator.NewEvaluator(testRunner, pythonAnalyzer, matcher, scorer, llmEscalator)
 
 	// 9. Services & Controllers
 	probService := service.NewProblemService(sqliteRepo)

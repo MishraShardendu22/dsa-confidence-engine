@@ -31,6 +31,9 @@ func NewEvaluator(
 	if llm == nil {
 		llm = &nlp.DisabledLLMEscalator{}
 	}
+	if m != nil && llm != nil {
+		m.SetEscalator(llm)
+	}
 	return &Evaluator{
 		runner:   r,
 		analyzer: a,
@@ -108,8 +111,12 @@ func (e *Evaluator) Evaluate(
 		return nil, fmt.Errorf("analysis failed: %s", errMsg)
 	}
 
-	// 3. Run Point B (Claimed concepts from explanation)
-	claimedConcepts, err := e.matcher.Match(ctx, submission.Explanation)
+	// 3. Run Point B (Claimed concepts from explanation with hybrid escalation)
+	var detectedIDs []string
+	for _, c := range analysisRes.ActualConcepts {
+		detectedIDs = append(detectedIDs, c.ConceptID)
+	}
+	claimedConcepts, err := e.matcher.MatchWithEscalation(ctx, submission.Explanation, detectedIDs, analysisRes.Evidence)
 	if err != nil {
 		return nil, err
 	}

@@ -17,6 +17,7 @@ type ConceptEmbedding struct {
 type CascadeMatcher struct {
 	ontology          *dsa.Ontology
 	embedder          Embedder
+	escalator         LLMEscalator
 	sortedAliases     []aliasEntry
 	conceptEmbeddings []ConceptEmbedding
 	embeddingEnabled  bool
@@ -210,4 +211,98 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 	})
 
 	return results, nil
+}
+
+func (m *CascadeMatcher) SetEscalator(escalator LLMEscalator) {
+	m.escalator = escalator
+}
+
+// MatchWithEscalation performs cascade keyword + alias + embedding matching first.
+// If no primary concepts were claimed or confidence is borderline, and code AST detected concepts,
+// it escalates to the configured LLMEscalator for semantic resolution of informal vernacular.
+func (m *CascadeMatcher) MatchWithEscalation(ctx context.Context, text string, detectedConcepts []string, evidence []model.Evidence) ([]model.ClaimedConcept, error) {
+	claimed, err := m.Match(ctx, text)
+	if err != nil {
+		return nil, err
+	}
+
+	// If exact/embedding matching already found primary claimed concepts with high confidence (>= 0.85),
+	// return immediately with zero LLM overhead.
+	hasHighConfidencePrimary := false
+	for _, c := range claimed {
+		if c.Role == model.RolePrimary && c.Confidence >= 0.85 {
+			hasHighConfidencePrimary = true
+			break
+		}
+	}
+
+	if hasHighConfidencePrimary || m.escalator == nil {
+		return claimed, nil
+	}
+
+	var claimedIDs []string
+	for _, c := range claimed {
+		claimedIDs = append(claimedIDs, c.ConceptID)
+	}
+
+	payload := LLMPayload{
+		CandidateExplanation: text,
+		ClaimedConcepts:      claimedIDs,
+		DetectedConcepts:     detectedConcepts,
+		Evidence:             FormatEvidenceSummaries(evidence),
+	}
+
+	decision, err := m.escalator.Escalate(ctx, payload)
+	if err != nil {
+		return claimed, nil
+	}
+
+	if decision != nil && decision.Confidence >= 0.70 {
+		claimedMap := make(map[string]model.ClaimedConcept)
+		for _, c := range claimed {
+			claimedMap[c.ConceptID] = c
+		}
+
+		for _, conceptID := range decision.ResolvedClaimedConcepts {
+			name := conceptID
+			category := "general"
+			role := model.RolePrimary
+			if m.ontology != nil {
+				if concept, found := m.ontology.FindConcept(conceptID); found && concept != nil {
+					name = concept.Name
+					category = concept.Category
+				}
+			}
+
+			if existing, exists := claimedMap[conceptID]; !exists {
+				claimedMap[conceptID] = model.ClaimedConcept{
+					ConceptID:     conceptID,
+					Name:          name,
+					Category:      category,
+					Confidence:    decision.Confidence,
+					MatchedPhrase: "llm escalation resolution: " + decision.Reasoning,
+					Stage:         "LLM_ESCALATION",
+					Role:          role,
+				}
+			} else if existing.Confidence < decision.Confidence {
+				existing.Confidence = decision.Confidence
+				existing.Stage = "LLM_ESCALATION"
+				claimedMap[conceptID] = existing
+			}
+		}
+
+		results := make([]model.ClaimedConcept, 0, len(claimedMap))
+		for _, c := range claimedMap {
+			results = append(results, c)
+		}
+		sort.Slice(results, func(i, j int) bool {
+			if results[i].Confidence != results[j].Confidence {
+				return results[i].Confidence > results[j].Confidence
+			}
+			return results[i].ConceptID < results[j].ConceptID
+		})
+		return results, nil
+	}
+
+	return claimed, nil
 }
