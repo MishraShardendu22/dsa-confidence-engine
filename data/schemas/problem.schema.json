@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dsa-confidence-engine.curiotech.internal/schemas/problem.schema.json",
+  "title": "DSAProblem",
+  "description": "Standard schema specification for algorithmic problems in the DSA Confidence Engine",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "language",
+    "entrypoint",
+    "tests"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$",
+      "description": "Unique identifier for the problem (slug formatted, alphanumeric, underscores, or hyphens)"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable problem title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Full problem statement including input/output rules and constraints"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["Easy", "Medium", "Hard", "EASY", "MEDIUM", "HARD", "easy", "medium", "hard"],
+      "default": "Medium",
+      "description": "Algorithmic complexity / difficulty rating"
+    },
+    "topic_tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Categorical DSA topic tags (e.g. array, dynamic-programming, graph)"
+    },
+    "language": {
+      "type": "string",
+      "default": "python",
+      "description": "Target programming language for candidate submissions"
+    },
+    "entrypoint": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary function name expected in the candidate code"
+    },
+    "entrypoint_aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Acceptable alternate function names (camelCase, snake_case, solve, etc.)"
+    },
+    "starter_code": {
+      "type": "string",
+      "description": "Optional boilerplate code or function stub provided to the candidate"
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Test cases evaluated to verify functional correctness",
+      "items": {
+        "type": "object",
+        "required": ["input", "expected_output"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Test case identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable test case label or description"
+          },
+          "input": {
+            "type": "string",
+            "description": "JSON-serialized dictionary of keyword arguments passed to the entrypoint"
+          },
+          "expected_output": {
+            "type": "string",
+            "description": "JSON-serialized expected return value from the entrypoint"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional notes or edge case explanation"
+          }
+        }
+      }
+    },
+    "accepted_strategies": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of accepted algorithmic strategies for this problem"
+    },
+    "required_concepts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "DSA concept IDs that MUST be present and reachable in candidate code"
+    },
+    "optional_concepts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "DSA concept IDs that may be used or mentioned without penalty"
+    },
+    "primary_concepts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Primary concept tags evaluated for scoring fidelity"
+    },
+    "hints": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Progressive algorithmic hints"
+    },
+    "time_limit_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "default": 2000,
+      "description": "Execution timeout limit in milliseconds"
+    },
+    "memory_limit_mb": {
+      "type": "integer",
+      "minimum": 16,
+      "default": 256,
+      "description": "Maximum memory threshold in megabytes"
+    }
+  },
+  "additionalProperties": false
+}
