@@ -118,12 +118,19 @@ class ASTExtractor(ast.NodeVisitor):
                     "var": obj
                 })
                 self.current_func["_dict_vars"].add(obj)
-            elif call_name.endswith(".append"):
+            elif call_name.endswith(".append") or call_name.endswith(".extend"):
                 obj = call_name.rsplit(".", 1)[0]
                 self.current_func["operations"].append({
                     "type": "list_append",
                     "lineno": node.lineno,
                     "var": obj
+                })
+                self.current_func["var_mutations"].append({
+                    "var": obj,
+                    "lineno": node.lineno,
+                    "key_deps": [],
+                    "val_deps": args_names,
+                    "kind": "list_append"
                 })
                 self.current_func["_list_vars"].add(obj)
             elif call_name.endswith(".pop"):
@@ -140,6 +147,13 @@ class ASTExtractor(ast.NodeVisitor):
                     "type": "set_add",
                     "lineno": node.lineno,
                     "var": obj
+                })
+                self.current_func["var_mutations"].append({
+                    "var": obj,
+                    "lineno": node.lineno,
+                    "key_deps": [],
+                    "val_deps": args_names,
+                    "kind": "set_add"
                 })
                 self.current_func["_set_vars"].add(obj)
             elif call_name.endswith(".remove") or call_name.endswith(".discard"):

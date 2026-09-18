@@ -40,6 +40,9 @@ func NewDetectorRegistry() *DetectorRegistry {
 			&BitManipulationDetector{},
 			&TrieDetector{},
 			&GreedyDetector{},
+			&TopologicalSortDetector{},
+			&DijkstraDetector{},
+			&UnionFindDetector{},
 		},
 	}
 }
@@ -86,6 +89,10 @@ func (d *HashMapDetector) Detect(
 		}
 
 		for _, op := range fn.Operations {
+			vLow := strings.ToLower(op.Var)
+			if vLow == "kwargs" || vLow == "args" || vLow == "self" || vLow == "params" {
+				continue
+			}
 			switch op.Type {
 			case "list_alloc":
 				listVars[op.Var] = true
@@ -260,6 +267,17 @@ func (d *HashMapDetector) Detect(
 			concepts = append(concepts, model.DetectedConcept{
 				ConceptID:      "frequency_count",
 				Name:           "HashMap Frequency Counting",
+				Category:       "hashing",
+				Evidence:       freqEvidence,
+				Reachable:      isReachable,
+				OutputRelevant: freqOutputRelevant,
+				Confidence:     0.95,
+				Role:           model.RoleSupporting,
+				Status:         "DETECTED",
+			})
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "counting",
+				Name:           "Element / Frequency Counting",
 				Category:       "hashing",
 				Evidence:       freqEvidence,
 				Reachable:      isReachable,
@@ -548,6 +566,40 @@ func (d *SlidingWindowDetector) Detect(
 							Type:           "sliding_window_condition",
 							Line:           wl.LineNo,
 							Description:    fmt.Sprintf("Sliding window invariant check: %s", wl.Expr),
+							Reachable:      isReachable,
+							OutputRelevant: rel,
+						})
+						break
+					}
+				}
+			}
+		}
+
+		// Check for fixed-size sliding window in for_loop with multiple writes/updates on a map or counter
+		dictWriteCount := make(map[string]int)
+		for _, op := range fn.Operations {
+			if (op.Type == "dict_write" || op.Type == "dict_alloc") && op.Var != "" {
+				dictWriteCount[op.Var]++
+			}
+		}
+		for varName, count := range dictWriteCount {
+			vLow := strings.ToLower(varName)
+			if strings.Contains(vLow, "dist") || strings.Contains(vLow, "memo") ||
+				strings.Contains(vLow, "graph") || strings.Contains(vLow, "adj") ||
+				strings.Contains(vLow, "parent") || strings.Contains(vLow, "cache") {
+				continue
+			}
+			if count >= 2 {
+				for _, op := range fn.Operations {
+					if op.Type == "for_loop" {
+						rel := isReachable
+						if rel {
+							outRel = true
+						}
+						evidence = append(evidence, model.Evidence{
+							Type:           "fixed_window_frequency_update",
+							Line:           op.LineNo,
+							Description:    fmt.Sprintf("Fixed-size sliding window update on map '%s'", varName),
 							Reachable:      isReachable,
 							OutputRelevant: rel,
 						})
@@ -915,6 +967,13 @@ func (d *RecursionDFSDetector) Detect(
 					break
 				}
 			}
+			for varName := range fn.VarDefs {
+				vLow := strings.ToLower(varName)
+				if strings.Contains(vLow, "tmp") || strings.Contains(vLow, "temp") || strings.Contains(vLow, "restore") || strings.Contains(vLow, "backtrack") {
+					hasBacktrackingSignal = true
+					break
+				}
+			}
 
 			if hasBacktrackingSignal {
 				concepts = append(concepts, model.DetectedConcept{
@@ -1137,6 +1196,31 @@ func (d *DPDetector) Detect(
 			}
 		}
 
+		// Check for Kadane's algorithm / running state DP (e.g. curr_max, max_so_far, max_prod, min_prod)
+		var kadaneEvidence []model.Evidence
+		hasKadane := false
+		for varName, def := range fn.VarDefs {
+			vLow := strings.ToLower(varName)
+			if strings.Contains(vLow, "cur_max") || strings.Contains(vLow, "curr_max") ||
+				strings.Contains(vLow, "cur_min") || strings.Contains(vLow, "curr_min") ||
+				strings.Contains(vLow, "max_so_far") || strings.Contains(vLow, "max_ending") ||
+				strings.Contains(vLow, "max_prod") || strings.Contains(vLow, "min_prod") ||
+				strings.Contains(vLow, "kadane") {
+				hasKadane = true
+				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, varName)
+				if rel {
+					outRel = true
+				}
+				kadaneEvidence = append(kadaneEvidence, model.Evidence{
+					Type:           "kadane_state_variable",
+					Line:           def.LineNo,
+					Description:    fmt.Sprintf("Kadane running DP state variable '%s'", varName),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+		}
+
 		if isRecursive && hasMemoTable {
 			concepts = append(concepts, model.DetectedConcept{
 				ConceptID:      "memoization",
@@ -1177,6 +1261,29 @@ func (d *DPDetector) Detect(
 				Name:           "Dynamic Programming",
 				Category:       "dynamic_programming",
 				Evidence:       dpEvidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+		} else if hasKadane && len(kadaneEvidence) > 0 {
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "kadane",
+				Name:           "Kadane's Algorithm",
+				Category:       "dynamic_programming",
+				Evidence:       kadaneEvidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "dynamic_programming",
+				Name:           "Dynamic Programming",
+				Category:       "dynamic_programming",
+				Evidence:       kadaneEvidence,
 				Reachable:      isReachable,
 				OutputRelevant: outRel,
 				Confidence:     0.95,
@@ -1494,7 +1601,7 @@ func (d *GreedyDetector) Detect(
 		outRel := false
 		isGreedy := false
 
-		// Check for greedy variable names
+		// Check for greedy variable names and parameters
 		for varName, def := range fn.VarDefs {
 			vLower := strings.ToLower(varName)
 			if strings.Contains(vLower, "reach") || strings.Contains(vLower, "greedy") || strings.Contains(vLower, "farthest") || strings.Contains(vLower, "best") || strings.Contains(vLower, "gas") || strings.Contains(vLower, "interval") {
@@ -1503,6 +1610,20 @@ func (d *GreedyDetector) Detect(
 					Type:           "greedy_variable",
 					Line:           def.LineNo,
 					Description:    fmt.Sprintf("Greedy tracking variable '%s'", varName),
+					Reachable:      isReachable,
+					OutputRelevant: isReachable,
+				})
+			}
+		}
+
+		for _, arg := range fn.Args {
+			aLower := strings.ToLower(arg)
+			if strings.Contains(aLower, "gas") || strings.Contains(aLower, "cost") || strings.Contains(aLower, "interval") {
+				isGreedy = true
+				evidence = append(evidence, model.Evidence{
+					Type:           "greedy_variable",
+					Line:           fn.LineNo,
+					Description:    fmt.Sprintf("Greedy tracking parameter '%s'", arg),
 					Reachable:      isReachable,
 					OutputRelevant: isReachable,
 				})
@@ -1545,6 +1666,298 @@ func (d *GreedyDetector) Detect(
 				OutputRelevant: outRel,
 				Confidence:     0.95,
 				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 18. Topological Sort Detector
+type TopologicalSortDetector struct{}
+
+func (d *TopologicalSortDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		hasIndegree := false
+		hasQueue := false
+		hasGraph := false
+		outRel := false
+
+		fnLow := strings.ToLower(fn.Name)
+		if strings.Contains(fnLow, "topo") || strings.Contains(fnLow, "kahn") {
+			hasIndegree = true
+		}
+
+		for v := range fn.VarDefs {
+			vLow := strings.ToLower(v)
+			if strings.Contains(vLow, "indegree") || strings.Contains(vLow, "in_degree") ||
+				strings.Contains(vLow, "deg") || strings.Contains(vLow, "incoming") ||
+				strings.Contains(vLow, "prereq") {
+				hasIndegree = true
+				evidence = append(evidence, model.Evidence{
+					Type:           "topological_indegree",
+					Line:           fn.VarDefs[v].LineNo,
+					Description:    fmt.Sprintf("Indegree vertex tracking array/map '%s'", v),
+					Reachable:      isReachable,
+					OutputRelevant: isReachable,
+				})
+			}
+			if strings.Contains(vLow, "adj") || strings.Contains(vLow, "graph") {
+				hasGraph = true
+			}
+			if strings.Contains(vLow, "topo") || strings.Contains(vLow, "order") {
+				hasIndegree = true
+			}
+		}
+
+		for _, arg := range fn.Args {
+			argLow := strings.ToLower(arg)
+			if strings.Contains(argLow, "prereq") || strings.Contains(argLow, "edge") || strings.Contains(argLow, "adj") {
+				hasGraph = true
+			}
+		}
+
+		for _, op := range fn.Operations {
+			if op.Type == "queue_op" || op.Type == "list_pop" {
+				hasQueue = true
+			}
+		}
+
+		if (hasIndegree && (hasQueue || hasGraph)) || (hasGraph && hasQueue && len(evidence) > 0) {
+			rel := isReachable
+			if rel {
+				outRel = true
+			}
+			if len(evidence) == 0 {
+				evidence = append(evidence, model.Evidence{
+					Type:           "topological_kahn_bfs",
+					Line:           fn.LineNo,
+					Description:    "Kahn algorithm topological dependency ordering",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "topological_sort",
+				Name:           "Topological Sort",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "graphs",
+				Name:           "Graphs",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RoleAuxiliary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 19. Dijkstra Detector
+type DijkstraDetector struct{}
+
+func (d *DijkstraDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		hasHeap := false
+		hasDist := false
+		outRel := false
+
+		fnLow := strings.ToLower(fn.Name)
+		if strings.Contains(fnLow, "dijkstra") || strings.Contains(fnLow, "shortest") {
+			hasDist = true
+		}
+
+		for v := range fn.VarDefs {
+			vLow := strings.ToLower(v)
+			if strings.Contains(vLow, "dist") || strings.Contains(vLow, "cost") || strings.Contains(vLow, "distance") {
+				hasDist = true
+				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, v)
+				if rel {
+					outRel = true
+				}
+				evidence = append(evidence, model.Evidence{
+					Type:           "dijkstra_distance_table",
+					Line:           fn.VarDefs[v].LineNo,
+					Description:    fmt.Sprintf("Distance/cost table '%s'", v),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+		}
+
+		for _, op := range fn.Operations {
+			if op.Type == "heap_call" || op.Type == "priority_queue" {
+				hasHeap = true
+			}
+		}
+
+		for _, call := range fn.Calls {
+			if strings.Contains(call.Name, "heappop") || strings.Contains(call.Name, "heappush") {
+				hasHeap = true
+			}
+		}
+
+		if hasHeap && hasDist && len(evidence) > 0 {
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "dijkstra",
+				Name:           "Dijkstra's Algorithm",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "graphs",
+				Name:           "Graphs",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RoleAuxiliary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 20. Union Find / DSU Detector
+type UnionFindDetector struct{}
+
+func (d *UnionFindDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		hasParent := false
+		hasFind := false
+		hasUnion := false
+		outRel := false
+
+		fnLow := strings.ToLower(fn.Name)
+		if strings.Contains(fnLow, "union") || strings.Contains(fnLow, "dsu") || strings.Contains(fnLow, "find") {
+			hasFind = true
+		}
+
+		for v := range fn.VarDefs {
+			vLow := strings.ToLower(v)
+			if strings.Contains(vLow, "parent") || strings.Contains(vLow, "root") || strings.Contains(vLow, "dsu") {
+				hasParent = true
+				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, v)
+				if rel {
+					outRel = true
+				}
+				evidence = append(evidence, model.Evidence{
+					Type:           "union_find_parent_array",
+					Line:           fn.VarDefs[v].LineNo,
+					Description:    fmt.Sprintf("Disjoint set parent array/map '%s'", v),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+			if strings.Contains(vLow, "find") {
+				hasFind = true
+			}
+			if strings.Contains(vLow, "union") {
+				hasUnion = true
+			}
+		}
+
+		for _, call := range fn.Calls {
+			cLow := strings.ToLower(call.Name)
+			if strings.Contains(cLow, "find") {
+				hasFind = true
+			}
+			if strings.Contains(cLow, "union") {
+				hasUnion = true
+			}
+		}
+
+		for _, other := range functions {
+			if other.ParentName == fn.Name {
+				oLow := strings.ToLower(other.Name)
+				if strings.Contains(oLow, "find") {
+					hasFind = true
+				}
+				if strings.Contains(oLow, "union") {
+					hasUnion = true
+				}
+			}
+		}
+
+		if hasParent && (hasFind || hasUnion) {
+			rel := isReachable
+			if rel {
+				outRel = true
+			}
+			if len(evidence) == 0 {
+				evidence = append(evidence, model.Evidence{
+					Type:           "disjoint_set_union",
+					Line:           fn.LineNo,
+					Description:    "Disjoint Set Union (DSU) operations",
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "union_find",
+				Name:           "Union Find / Disjoint Set Union (DSU)",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "graphs",
+				Name:           "Graphs",
+				Category:       "graphs",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RoleAuxiliary,
 				Status:         "DETECTED",
 			})
 		}
