@@ -88,6 +88,7 @@
     - frequency dictionaries
     - character count
     - element count
+    - counting
     - tally
     - counter
     - count occurrences
@@ -169,3 +170,19 @@
     - slope
     - coordinate
     - point
+
+- id: counting
+  name: Element / Frequency Counting
+  parent: hashing
+  description: Counting element occurrences or frequencies using hash maps, arrays, or frequency tables.
+  aliases:
+    - counting
+    - frequency counting
+    - element counter
+  keywords:
+    - count
+    - occurrences
+    - counter
+  code_signals:
+    - collections_counter
+    - dict_increment

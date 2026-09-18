@@ -34,17 +34,34 @@
     - comparator
 
 - id: quicksort
-  name: Quick Sort / Quickselect
+  name: Quick Sort
   parent: sorting
   description: Divide and conquer sorting using a pivot element.
   aliases:
     - quicksort
-    - quick select
+    - quick sort
     - partition algorithm
   keywords:
     - quicksort
     - pivot
+
+- id: quickselect
+  name: Quickselect
+  parent: sorting
+  description: Selection algorithm to find the kth smallest or largest element in an unordered list based on partitioning.
+  aliases:
     - quickselect
+    - quick select
+    - hoare partition
+    - kth order statistic
+    - partition select
+  keywords:
+    - quickselect
+    - pivot
+    - partition
+  code_signals:
+    - partition_func
+    - quickselect_call
 
 - id: mergesort
   name: Merge Sort

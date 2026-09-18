@@ -76,6 +76,25 @@
   code_signals:
     - nested_loops
   explanation_examples:
-    - "use a brute force nested loop to check all pairs"
-    - "check every pair of numbers using two loops"
+- id: simulation
+  name: Simulation
+  parent: arrays
+  description: Step-by-step state tracking and execution modeling following explicit rules or matrix movements.
+  aliases:
+    - simulation
+    - simulate
+    - state simulation
+    - step by step simulation
+    - iterative simulation
+  keywords:
+    - simulate
+    - simulation
+    - step
+    - state
+  code_signals:
+    - state_loop
+    - step_iteration
+  explanation_examples:
+    - "simulate the process step by step"
+    - "track the state in an iterative simulation"
 
