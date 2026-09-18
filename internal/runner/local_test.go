@@ -92,4 +92,50 @@ def solve(nums, target):
 	if res.Status != model.TestStatusFail {
 		t.Errorf("expected timeout FAIL, got %s", res.Status)
 	}
+
+	// Case 5: LeetCode class Solution
+	solutionClassCode := `
+class Solution:
+    def solve(self, nums, target):
+        seen = {}
+        for i, n in enumerate(nums):
+            diff = target - n
+            if diff in seen:
+                return [seen[diff], i]
+            seen[n] = i
+        return []
+`
+	res, err = r.Run(ctx, model.Submission{SourceCode: solutionClassCode}, problem)
+	if err != nil {
+		t.Fatalf("unexpected error running class Solution: %v", err)
+	}
+	if res.Status != model.TestStatusPass {
+		t.Errorf("expected class Solution to PASS, got %s (error: %s)", res.Status, res.Error)
+	}
+
+	// Case 6: Single-parameter function receiving list input
+	singleArgProb := model.Problem{
+		ID:         "second_max",
+		Language:   "python",
+		Entrypoint: "solve",
+		Tests: []model.TestCase{
+			{
+				ID:             "1",
+				Input:          "[10, 20, 4, 45, 99]",
+				ExpectedOutput: "45",
+			},
+		},
+	}
+	singleArgCode := `
+def solve(nums):
+    unique = sorted(list(set(nums)))
+    return unique[-2]
+`
+	res, err = r.Run(ctx, model.Submission{SourceCode: singleArgCode}, singleArgProb)
+	if err != nil {
+		t.Fatalf("unexpected error running single list argument: %v", err)
+	}
+	if res.Status != model.TestStatusPass {
+		t.Errorf("expected single list argument to PASS, got %s (error: %s)", res.Status, res.Error)
+	}
 }

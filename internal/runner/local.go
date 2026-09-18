@@ -69,9 +69,9 @@ def run():
 
     code = payload.get("code", "")
     entrypoint_name = payload.get("entrypoint", "solve")
-    entrypoint_aliases = payload.get("entrypoint_aliases", [])
+    entrypoint_aliases = payload.get("entrypoint_aliases") or []
     problem_id = payload.get("problem_id", "")
-    tests = payload.get("tests", [])
+    tests = payload.get("tests") or []
 
     env = {}
 
@@ -91,6 +91,17 @@ def run():
             "failed_count": len(tests) if tests else 1,
             "total_count": len(tests) if tests else 1,
             "error": f"Syntax/Compilation error: {str(e)}\n{tb}",
+            "details": []
+        }) + "\n")
+        return
+
+    if not tests:
+        real_stdout.write(json.dumps({
+            "status": "FAIL",
+            "passed_count": 0,
+            "failed_count": 0,
+            "total_count": 0,
+            "error": "No test cases configured for problem",
             "details": []
         }) + "\n")
         return
@@ -119,6 +130,9 @@ def run():
         sys.stderr = real_stderr
 
     # 3. Resolve entrypoint intelligently
+    norm_prob = problem_id.replace("_", "").lower()
+    norm_entry = entrypoint_name.replace("_", "").lower()
+
     entrypoint = None
     if entrypoint_name in env and callable(env[entrypoint_name]):
         entrypoint = env[entrypoint_name]
@@ -131,8 +145,6 @@ def run():
 
     if entrypoint is None:
         all_funcs = [n.name for n in funcs if isinstance(n, ast.FunctionDef)]
-        norm_prob = problem_id.replace("_", "").lower()
-        norm_entry = entrypoint_name.replace("_", "").lower()
         for fname in all_funcs:
             norm_fname = fname.replace("_", "").lower()
             if norm_fname == norm_prob or norm_fname == norm_entry or norm_fname in ("solve", "solution"):
@@ -144,6 +156,27 @@ def run():
         all_funcs = [n.name for n in funcs if isinstance(n, ast.FunctionDef)]
         if len(all_funcs) == 1 and all_funcs[0] in env and callable(env[all_funcs[0]]):
             entrypoint = env[all_funcs[0]]
+
+    # Support LeetCode style class Solution
+    if entrypoint is None and "Solution" in env and isinstance(env["Solution"], type):
+        try:
+            sol_instance = env["Solution"]()
+            if hasattr(sol_instance, entrypoint_name) and callable(getattr(sol_instance, entrypoint_name)):
+                entrypoint = getattr(sol_instance, entrypoint_name)
+            if entrypoint is None:
+                for alias in entrypoint_aliases:
+                    if hasattr(sol_instance, alias) and callable(getattr(sol_instance, alias)):
+                        entrypoint = getattr(sol_instance, alias)
+                        break
+            if entrypoint is None:
+                for attr in dir(sol_instance):
+                    if not attr.startswith("_") and callable(getattr(sol_instance, attr)):
+                        norm_attr = attr.replace("_", "").lower()
+                        if norm_attr == norm_prob or norm_attr == norm_entry or norm_attr in ("solve", "solution"):
+                            entrypoint = getattr(sol_instance, attr)
+                            break
+        except Exception:
+            pass
 
     if entrypoint is None:
         real_stdout.write(json.dumps({
@@ -167,6 +200,11 @@ def run():
             return str(val)
         if isinstance(val, (int, float, str)):
             return str(val)
+        if isinstance(val, (set, frozenset)):
+            try:
+                return json.dumps(sorted(list(val)))
+            except Exception:
+                return str(val)
         try:
             return json.dumps(val, sort_keys=True)
         except Exception:
@@ -207,7 +245,19 @@ def run():
                 if isinstance(parsed_input, dict):
                     result = entrypoint(**parsed_input)
                 elif isinstance(parsed_input, list):
-                    result = entrypoint(*parsed_input)
+                    try:
+                        import inspect
+                        sig = inspect.signature(entrypoint)
+                        params = [p for p in sig.parameters.values() if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+                        if len(params) == 1 and len(parsed_input) != 1:
+                            result = entrypoint(parsed_input)
+                        else:
+                            result = entrypoint(*parsed_input)
+                    except Exception:
+                        try:
+                            result = entrypoint(*parsed_input)
+                        except TypeError:
+                            result = entrypoint(parsed_input)
                 else:
                     result = entrypoint(parsed_input)
             finally:
