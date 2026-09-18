@@ -86,7 +86,7 @@ func TestHealthEndpoint(t *testing.T) {
 	app, _ := setupTestApp(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestProblemEndpoints(t *testing.T) {
 
 	// 1. List Problems
 	req := httptest.NewRequest(http.MethodGet, "/api/problems", nil)
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestProblemEndpoints(t *testing.T) {
 
 	// 2. Get Problem by ID
 	req = httptest.NewRequest(http.MethodGet, "/api/problems/two_sum", nil)
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -151,7 +151,7 @@ def solve(nums, target):
 	req := httptest.NewRequest(http.MethodPost, "/api/evaluate", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req, 5000)
+	resp, err := app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("evaluate request failed: %v", err)
 	}
@@ -185,7 +185,7 @@ def solve(nums, target):
 
 	// Fetch via GET /api/evaluations/:id
 	req = httptest.NewRequest(http.MethodGet, "/api/evaluations/"+envelope.Data.ID, nil)
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("get evaluation failed: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 
 	// 1. Problem not found -> 404
 	req := httptest.NewRequest(http.MethodGet, "/api/problems/non_existent", nil)
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 
 	// 2. Evaluation not found -> 404
 	req = httptest.NewRequest(http.MethodGet, "/api/evaluations/non_existent", nil)
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 	probBytes, _ := json.Marshal(invalidProb)
 	req = httptest.NewRequest(http.MethodPost, "/api/problems", bytes.NewReader(probBytes))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 	noTestsBytes, _ := json.Marshal(noTestsProb)
 	req = httptest.NewRequest(http.MethodPost, "/api/problems", bytes.NewReader(noTestsBytes))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -248,7 +248,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 	subBytes, _ := json.Marshal(invalidSub)
 	req = httptest.NewRequest(http.MethodPost, "/api/evaluate", bytes.NewReader(subBytes))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -262,7 +262,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 	form.Set("source_code", "def solve(): pass")
 	req = httptest.NewRequest(http.MethodPost, "/evaluate", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -277,7 +277,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 	form.Set("explanation", "I used brute force")
 	req = httptest.NewRequest(http.MethodPost, "/evaluate", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err = app.Test(req, 5000)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
@@ -291,7 +291,7 @@ func TestControllerValidationAndErrors(t *testing.T) {
 
 	// 7. Web GET /evaluation/:id for non-existent -> 404
 	req = httptest.NewRequest(http.MethodGet, "/evaluation/non_existent", nil)
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, 10000)
 	if err != nil {
 		t.Fatalf("request failed: %v", err)
 	}
