@@ -6,6 +6,8 @@
     - bitwise
     - bitwise operations
     - binary representation
+    - xor
+    - bitwise xor
   keywords:
     - bit
     - xor

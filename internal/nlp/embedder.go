@@ -92,7 +92,8 @@ func CosineSimilarity(a, b []float32) float64 {
 		return 0.0
 	}
 
-	return dot / (math.Sqrt(normA) * math.Sqrt(normB))
+	sim := dot / (math.Sqrt(normA) * math.Sqrt(normB))
+	return math.Max(-1.0, math.Min(1.0, sim))
 }
 
 func Tokenize(text string) []string {

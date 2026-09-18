@@ -68,6 +68,22 @@
   related_concepts:
     - tabulation
 
+- id: kadane
+  name: Kadane's Algorithm
+  parent: dynamic_programming
+  description: Maximum subarray sum dynamic programming algorithm in linear time.
+  aliases:
+    - kadane
+    - kadane's algorithm
+    - kadane algorithm
+    - maximum subarray dp
+  keywords:
+    - kadane
+    - subarray
+    - max sum
+  related_concepts:
+    - dp_1d
+
 - id: dp_subsequence
   name: Subsequence DP
   parent: dynamic_programming

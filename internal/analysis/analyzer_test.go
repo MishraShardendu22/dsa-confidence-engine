@@ -319,4 +319,221 @@ def solve(nums, target):
 			t.Errorf("expected reachable two_pointers to be detected")
 		}
 	})
+
+	// 10. Pure array/list indexing does NOT detect hashmap
+	t.Run("list indexing does not detect hashmap", func(t *testing.T) {
+		code := `
+def solve(nums):
+    arr = [0] * len(nums)
+    for i in range(len(nums)):
+        arr[i] = nums[i] * 2
+    return arr[0]
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "hashmap" {
+				t.Errorf("list indexing must NOT detect hashmap, but got: %+v", c)
+			}
+		}
+	})
+
+	// 11. Recursive factorial does NOT detect DFS
+	t.Run("recursive factorial emits recursion but not dfs", func(t *testing.T) {
+		code := `
+def solve(n):
+    if n <= 1:
+        return 1
+    return n * solve(n - 1)
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		hasRecursion := false
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "recursion" {
+				hasRecursion = true
+			}
+			if c.ConceptID == "dfs" {
+				t.Errorf("recursive factorial must NOT be detected as DFS")
+			}
+		}
+		if !hasRecursion {
+			t.Errorf("expected recursion to be detected")
+		}
+	})
+
+	// 12. Two pointers without midpoint does NOT detect binary search
+	t.Run("two pointers without midpoint does not detect binary search", func(t *testing.T) {
+		code := `
+def solve(nums, target):
+    l, r = 0, len(nums) - 1
+    while l < r:
+        s = nums[l] + nums[r]
+        if s == target:
+            return True
+        elif s < target:
+            l += 1
+        else:
+            r -= 1
+    return False
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "binary_search" {
+				t.Errorf("two pointers without midpoint must NOT detect binary_search")
+			}
+		}
+	})
+
+	// 13. Dummy if guard does not make dead variables output-relevant
+	t.Run("dummy if guard does not make dead variables output-relevant", func(t *testing.T) {
+		code := `
+def solve(nums):
+    counts = {}
+    for x in nums:
+        counts[x] = counts.get(x, 0) + 1
+    if len(counts) > 0:
+        pass
+    return max(nums)
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "hashmap" && c.OutputRelevant {
+				t.Errorf("hashmap guarded by dummy 'pass' if condition must NOT be output-relevant")
+			}
+		}
+	})
+
+	// 14. Uncalled nested helper is NOT marked reachable
+	t.Run("uncalled nested helper is unreachable", func(t *testing.T) {
+		code := `
+def solve(nums):
+    def unused_helper():
+        return {}
+    return nums[0]
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "hashmap" && c.Reachable {
+				t.Errorf("uncalled nested helper must NOT be marked reachable")
+			}
+		}
+	})
+
+	// 15. Simple queue drain without enqueue or graph context does NOT detect BFS (Test 7)
+	t.Run("simple queue drain is not bfs", func(t *testing.T) {
+		code := `
+from collections import deque
+
+def solve(items):
+    q = deque(items)
+    while q:
+        x = q.popleft()
+    return 0
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "bfs" {
+				t.Errorf("simple queue drain without enqueue or graph context must NOT detect BFS")
+			}
+		}
+	})
+
+	// 16. Single counter while loop with dict write does NOT detect sliding window (Test 8)
+	t.Run("single counter while loop is not sliding window", func(t *testing.T) {
+		code := `
+def solve(nums):
+    state = {}
+    i = 0
+    while i < len(nums):
+        state[nums[i]] = i
+        i += 1
+    return len(state)
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "sliding_window" {
+				t.Errorf("single counter while loop must NOT detect sliding window")
+			}
+		}
+	})
+
+	// 17. Bisection calculation without mid name detects binary search
+	t.Run("bisection calculation detects binary search", func(t *testing.T) {
+		code := `
+def solve(nums, target):
+    l = 0
+    r = len(nums) - 1
+    while l <= r:
+        m = (l + r) // 2
+        if nums[m] == target:
+            return m
+        elif nums[m] < target:
+            l = m + 1
+        else:
+            r = m - 1
+    return -1
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var bsFound bool
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "binary_search" {
+				bsFound = true
+				break
+			}
+		}
+		if !bsFound {
+			t.Errorf("expected binary_search to be detected via bisection operation")
+		}
+	})
+
+	// 18. Unused sorting is NOT marked output-relevant (Test 5)
+	t.Run("unused sorting is not output-relevant", func(t *testing.T) {
+		code := `
+def solve(nums):
+    copy = nums[:]
+    copy.sort()
+    return nums[0]
+`
+		res, err := analyzer.Analyze(ctx, []byte(code), analysis.AnalysisContract{Entrypoint: "solve"})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range res.ActualConcepts {
+			if c.ConceptID == "sorting" && c.OutputRelevant {
+				t.Errorf("unused sorting of detached copy must NOT be output-relevant")
+			}
+		}
+	})
 }

@@ -3,6 +3,8 @@ package fidelity
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/dsa"
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/model"
@@ -30,6 +32,25 @@ func NewScorer(ontology *dsa.Ontology, thresholds Thresholds) *Scorer {
 	}
 }
 
+func (s *Scorer) findMatchingActual(conceptID string, actualMap map[string]model.DetectedConcept) *model.DetectedConcept {
+	if a, ok := actualMap[conceptID]; ok {
+		return &a
+	}
+	sortedKeys := make([]string, 0, len(actualMap))
+	for k := range actualMap {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, actID := range sortedKeys {
+		a := actualMap[actID]
+		if s.ontology != nil && (s.ontology.IsAncestor(actID, conceptID) || s.ontology.IsAncestor(conceptID, actID)) {
+			return &a
+		}
+	}
+	return nil
+}
+
 func (s *Scorer) Score(
 	actual []model.DetectedConcept,
 	claimed []model.ClaimedConcept,
@@ -43,6 +64,21 @@ func (s *Scorer) Score(
 			Explanation: "Candidate did not articulate any recognizable DSA approach.",
 		}
 	}
+
+	// Deduplicate claimed concepts by ConceptID to prevent score distortion
+	claimedDedup := make([]model.ClaimedConcept, 0, len(claimed))
+	seenClaim := make(map[string]int)
+	for _, c := range claimed {
+		if idx, seen := seenClaim[c.ConceptID]; seen {
+			if c.Confidence > claimedDedup[idx].Confidence {
+				claimedDedup[idx] = c
+			}
+		} else {
+			seenClaim[c.ConceptID] = len(claimedDedup)
+			claimedDedup = append(claimedDedup, c)
+		}
+	}
+	claimed = claimedDedup
 
 	actualMap := make(map[string]model.DetectedConcept, len(actual))
 	for _, a := range actual {
@@ -80,17 +116,7 @@ func (s *Scorer) Score(
 	for _, c := range claimed {
 		if primarySet[c.ConceptID] {
 			primaryClaimedCount++
-			var foundActual *model.DetectedConcept
-			if a, ok := actualMap[c.ConceptID]; ok {
-				foundActual = &a
-			} else {
-				for actID, a := range actualMap {
-					if s.ontology != nil && (s.ontology.IsAncestor(actID, c.ConceptID) || s.ontology.IsAncestor(c.ConceptID, actID)) {
-						foundActual = &a
-						break
-					}
-				}
-			}
+			foundActual := s.findMatchingActual(c.ConceptID, actualMap)
 			if foundActual != nil && foundActual.Reachable {
 				if foundActual.OutputRelevant {
 					primaryMatchedCount++
@@ -122,17 +148,7 @@ func (s *Scorer) Score(
 		}
 
 		// Search for actual match directly or hierarchically
-		var foundActual *model.DetectedConcept
-		if a, ok := actualMap[c.ConceptID]; ok {
-			foundActual = &a
-		} else {
-			for actID, a := range actualMap {
-				if s.ontology != nil && (s.ontology.IsAncestor(actID, c.ConceptID) || s.ontology.IsAncestor(c.ConceptID, actID)) {
-					foundActual = &a
-					break
-				}
-			}
-		}
+		foundActual := s.findMatchingActual(c.ConceptID, actualMap)
 
 		if foundActual != nil {
 			claimedMatchedActuals[foundActual.ConceptID] = true
@@ -181,14 +197,15 @@ func (s *Scorer) Score(
 			}
 		} else {
 			// Concept not implemented in code
-			if allPrimaryFullyMatched && (role == model.RoleAuxiliary || isGenericConcept(c.ConceptID)) {
+			// Forgive generic context/syntax concepts or problem-defined optional concepts when primary strategy is verified
+			if allPrimaryFullyMatched && (isGenericConcept(c.ConceptID) || optionalSet[c.ConceptID]) {
 				missing = append(missing, model.ConceptMatch{
 					ConceptID:      c.ConceptID,
 					Name:           c.Name,
 					Role:           role,
 					OutputRelevant: false,
 					Contribution:   0.0,
-					Notes:          "Generic concept omitted or implicit; primary approach fully verified",
+					Notes:          "Optional or generic concept; primary approach fully verified",
 				})
 				diagnostics = append(diagnostics, fmt.Sprintf(
 					"Candidate mentioned %s in explanation; core primary strategy is fully verified in code.",
@@ -260,8 +277,58 @@ func (s *Scorer) Score(
 		}
 	}
 
+	// 3. Verify problem required concepts are implemented in reachable code
+	for _, reqID := range problem.RequiredConcepts {
+		foundActual := s.findMatchingActual(reqID, actualMap)
+		if foundActual == nil || !foundActual.Reachable {
+			alreadyMissing := false
+			for _, m := range missing {
+				if m.ConceptID == reqID {
+					alreadyMissing = true
+					break
+				}
+			}
+			if !alreadyMissing {
+				totalWeight += 2.0
+				missing = append(missing, model.ConceptMatch{
+					ConceptID:      reqID,
+					Name:           reqID,
+					Role:           model.RolePrimary,
+					OutputRelevant: false,
+					Contribution:   0.0,
+					Notes:          "Problem required concept missing from code",
+				})
+				diagnostics = append(diagnostics, fmt.Sprintf(
+					"Problem requires '%s', but this was not detected in executable code.",
+					reqID,
+				))
+			}
+		}
+	}
+
+	// 4. Check alignment with problem accepted strategies if defined
+	if len(problem.AcceptedStrategies) > 0 {
+		var matchedStrategies []string
+		for _, strat := range problem.AcceptedStrategies {
+			stratLow := strings.ToLower(strat)
+			for _, m := range matched {
+				cLow := strings.ToLower(m.ConceptID)
+				if strings.Contains(stratLow, cLow) {
+					matchedStrategies = append(matchedStrategies, strat)
+					break
+				}
+			}
+		}
+		if len(matchedStrategies) > 0 {
+			diagnostics = append(diagnostics, fmt.Sprintf("Aligned with accepted strategy: %s", strings.Join(matchedStrategies, ", ")))
+		}
+	}
+
 	var rawScore float64
 	if totalWeight > 0 {
+		if extraPenalty > 0.30 {
+			extraPenalty = 0.30
+		}
 		rawScore = (earnedWeight / totalWeight) - extraPenalty
 	}
 	if rawScore < 0.0 {
@@ -301,7 +368,8 @@ func (s *Scorer) Score(
 // that represent context rather than high-level algorithmic strategies.
 func isGenericConcept(id string) bool {
 	switch id {
-	case "arrays", "iteration", "strings", "primitives", "linear_scan", "variables":
+	case "arrays", "iteration", "strings", "primitives", "linear_scan", "variables",
+		"loops", "conditionals", "comparison", "indexing", "arithmetic", "boolean_logic", "enumeration":
 		return true
 	default:
 		return false

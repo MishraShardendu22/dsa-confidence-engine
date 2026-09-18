@@ -66,6 +66,39 @@ func NewCascadeMatcher(ctx context.Context, ontology *dsa.Ontology, embedder Emb
 	return matcher, nil
 }
 
+func isNegatedOccurrence(fullNormText string, matchIdx int) bool {
+	prefix := fullNormText[:matchIdx]
+	words := strings.Fields(prefix)
+	if len(words) == 0 {
+		return false
+	}
+
+	windowSize := 5
+	if len(words) < windowSize {
+		windowSize = len(words)
+	}
+	recentWords := words[len(words)-windowSize:]
+
+	for i, w := range recentWords {
+		switch w {
+		case "not", "no", "never", "didnt", "dont", "wont", "cant", "cannot", "without", "avoid", "avoided", "avoiding", "neither", "nor", "against":
+			if i+1 < len(recentWords) && recentWords[i+1] == "only" {
+				continue
+			}
+			return true
+		case "instead":
+			if i+1 < len(recentWords) && recentWords[i+1] == "of" {
+				return true
+			}
+		case "rather":
+			if i+1 < len(recentWords) && recentWords[i+1] == "than" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.ClaimedConcept, error) {
 	normText := dsa.NormalizeText(text)
 	claimedMap := make(map[string]*model.ClaimedConcept)
@@ -74,7 +107,27 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 	textPadded := " " + normText + " "
 	for _, entry := range m.sortedAliases {
 		needle := " " + entry.phrase + " "
-		if strings.Contains(textPadded, needle) {
+		if !strings.Contains(textPadded, needle) {
+			continue
+		}
+
+		// Check all occurrences for non-negated usage
+		hasPositiveOccurrence := false
+		searchStart := 0
+		for {
+			idx := strings.Index(textPadded[searchStart:], needle)
+			if idx == -1 {
+				break
+			}
+			actualIdx := searchStart + idx
+			if !isNegatedOccurrence(textPadded, actualIdx) {
+				hasPositiveOccurrence = true
+				break
+			}
+			searchStart = actualIdx + len(needle)
+		}
+
+		if hasPositiveOccurrence {
 			if _, exists := claimedMap[entry.concept.ID]; !exists {
 				claimedMap[entry.concept.ID] = &model.ClaimedConcept{
 					ConceptID:     entry.concept.ID,
@@ -118,6 +171,14 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 	for _, c := range claimedMap {
 		results = append(results, *c)
 	}
+
+	// Sort results deterministically
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Confidence != results[j].Confidence {
+			return results[i].Confidence > results[j].Confidence
+		}
+		return results[i].ConceptID < results[j].ConceptID
+	})
 
 	return results, nil
 }

@@ -8,6 +8,33 @@ type FunctionRelevance struct {
 	RelevantVars map[string]bool
 }
 
+func containsIdentifier(raw, ident string) bool {
+	if ident == "" || raw == "" {
+		return false
+	}
+	idx := 0
+	for {
+		pos := strings.Index(raw[idx:], ident)
+		if pos == -1 {
+			return false
+		}
+		actualPos := idx + pos
+		endPos := actualPos + len(ident)
+
+		leftOk := actualPos == 0 || !isIdentRune(rune(raw[actualPos-1]))
+		rightOk := endPos == len(raw) || !isIdentRune(rune(raw[endPos]))
+
+		if leftOk && rightOk {
+			return true
+		}
+		idx = actualPos + 1
+	}
+}
+
+func isIdentRune(r rune) bool {
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_'
+}
+
 // ComputeOutputRelevance computes backward dataflow slice from return statements
 // of all reachable functions.
 func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]*FunctionRelevance {
@@ -24,7 +51,7 @@ func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]
 			// Also inspect raw return expression for variable tokens
 			if ret.Raw != "" {
 				for _, op := range fn.Operations {
-					if op.Var != "" && strings.Contains(ret.Raw, op.Var) {
+					if op.Var != "" && containsIdentifier(ret.Raw, op.Var) {
 						relevant[op.Var] = true
 					}
 				}
@@ -38,8 +65,10 @@ func ComputeOutputRelevance(reachableFuncs map[string]*FunctionNode) map[string]
 				}
 			}
 			for _, ig := range fn.IfGuards {
-				for _, cv := range ig.CondVars {
-					relevant[cv] = true
+				if ig.HasReturn {
+					for _, cv := range ig.CondVars {
+						relevant[cv] = true
+					}
 				}
 			}
 		}

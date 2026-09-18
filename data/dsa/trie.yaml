@@ -1,5 +1,6 @@
 - id: trie
   name: Trie (Prefix Tree)
+  parent: trees
   description: Tree-like data structure used to efficiently store and retrieve keys in a dataset of strings.
   aliases:
     - trie

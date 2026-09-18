@@ -107,4 +107,53 @@ func TestCascadeMatcher(t *testing.T) {
 			t.Errorf("expected dynamic_programming to be claimed")
 		}
 	})
+
+	// 4. Test Negation Detection
+	t.Run("negation detection for avoided or non-used concepts", func(t *testing.T) {
+		text := "I did not use a hashmap and avoided recursion entirely. Instead of binary search, I used two pointers."
+		claimed, err := matcher.Match(ctx, text)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range claimed {
+			if c.ConceptID == "hashmap" {
+				t.Errorf("hashmap should NOT be claimed because it is negated with 'did not use'")
+			}
+			if c.ConceptID == "recursion" {
+				t.Errorf("recursion should NOT be claimed because it is negated with 'avoided'")
+			}
+			if c.ConceptID == "binary_search" {
+				t.Errorf("binary_search should NOT be claimed because it is negated with 'instead of'")
+			}
+		}
+
+		hasTwoPtr := false
+		for _, c := range claimed {
+			if c.ConceptID == "two_pointers" {
+				hasTwoPtr = true
+			}
+		}
+		if !hasTwoPtr {
+			t.Errorf("expected two_pointers to be claimed positively")
+		}
+	})
+
+	// 5. Test Short Common-Word Disambiguation
+	t.Run("common words set and bit do not falsely trigger fenwick or hashset", func(t *testing.T) {
+		text := "I set left to 0 and right to n - 1 and do a bit of math."
+		claimed, err := matcher.Match(ctx, text)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		for _, c := range claimed {
+			if c.ConceptID == "fenwick_tree" {
+				t.Errorf("fenwick_tree should NOT be claimed from common word 'bit'")
+			}
+			if c.ConceptID == "hashset" {
+				t.Errorf("hashset should NOT be claimed from verb 'set'")
+			}
+		}
+	})
 }

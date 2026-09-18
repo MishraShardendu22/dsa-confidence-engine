@@ -16,8 +16,9 @@
   description: Data structure efficiently updating elements and calculating prefix sums in a table of numbers in O(log n).
   aliases:
     - fenwick tree
-    - bit
     - binary indexed tree
+    - bit tree
+    - fenwick
   keywords:
     - fenwick
     - bit

@@ -28,11 +28,22 @@ class ASTExtractor(ast.NodeVisitor):
             "var_reads": [],
             "operations": [],
             "while_loops": [],
-            "if_guards": []
+            "if_guards": [],
+            "_dict_vars": set(),
+            "_list_vars": set(),
+            "_set_vars": set()
         }
+        for a in node.args.args:
+            arg_lower = a.arg.lower()
+            if any(term in arg_lower for term in ("num", "arr", "list", "seq", "val", "element")):
+                func_info["_list_vars"].add(a.arg)
+
         self.functions.append(func_info)
         self.func_stack.append(func_info)
+        prev_loop_depth = self.loop_depth
+        self.loop_depth = 0
         self.generic_visit(node)
+        self.loop_depth = prev_loop_depth
         self.func_stack.pop()
 
     def visit_AsyncFunctionDef(self, node):
@@ -100,35 +111,39 @@ class ASTExtractor(ast.NodeVisitor):
                     "op": call_name
                 })
             elif call_name.endswith(".get"):
-                obj = call_name.split(".")[0]
+                obj = call_name.rsplit(".", 1)[0]
                 self.current_func["operations"].append({
                     "type": "dict_get",
                     "lineno": node.lineno,
                     "var": obj
                 })
+                self.current_func["_dict_vars"].add(obj)
             elif call_name.endswith(".append"):
-                obj = call_name.split(".")[0]
+                obj = call_name.rsplit(".", 1)[0]
                 self.current_func["operations"].append({
                     "type": "list_append",
                     "lineno": node.lineno,
                     "var": obj
                 })
+                self.current_func["_list_vars"].add(obj)
             elif call_name.endswith(".pop"):
-                obj = call_name.split(".")[0]
+                obj = call_name.rsplit(".", 1)[0]
+                op_type = "dict_pop" if obj in self.current_func.get("_dict_vars", set()) else "list_pop"
                 self.current_func["operations"].append({
-                    "type": "list_pop",
+                    "type": op_type,
                     "lineno": node.lineno,
                     "var": obj
                 })
             elif call_name.endswith(".add"):
-                obj = call_name.split(".")[0]
+                obj = call_name.rsplit(".", 1)[0]
                 self.current_func["operations"].append({
                     "type": "set_add",
                     "lineno": node.lineno,
                     "var": obj
                 })
+                self.current_func["_set_vars"].add(obj)
             elif call_name.endswith(".remove") or call_name.endswith(".discard"):
-                obj = call_name.split(".")[0]
+                obj = call_name.rsplit(".", 1)[0]
                 self.current_func["operations"].append({
                     "type": "set_remove",
                     "lineno": node.lineno,
@@ -181,77 +196,115 @@ class ASTExtractor(ast.NodeVisitor):
             })
         self.generic_visit(node)
 
+    def _record_assign_target(self, target, val_node, val_names, lineno):
+        if not self.current_func:
+            return
+
+        if isinstance(target, ast.Name):
+            var_name = target.id
+            kind = "assign"
+            if isinstance(val_node, ast.Dict):
+                kind = "dict_alloc"
+                self.current_func["operations"].append({
+                    "type": "dict_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_dict_vars"].add(var_name)
+            elif isinstance(val_node, ast.Call) and self._get_name(val_node.func) in ("dict", "defaultdict", "Counter"):
+                kind = "dict_alloc"
+                self.current_func["operations"].append({
+                    "type": "dict_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_dict_vars"].add(var_name)
+            elif isinstance(val_node, ast.Set):
+                kind = "set_alloc"
+                self.current_func["operations"].append({
+                    "type": "set_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_set_vars"].add(var_name)
+            elif isinstance(val_node, ast.Call) and self._get_name(val_node.func) == "set":
+                kind = "set_alloc"
+                self.current_func["operations"].append({
+                    "type": "set_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_set_vars"].add(var_name)
+            elif isinstance(val_node, ast.List):
+                kind = "list_alloc"
+                self.current_func["operations"].append({
+                    "type": "list_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_list_vars"].add(var_name)
+            elif isinstance(val_node, ast.BinOp) and isinstance(val_node.op, ast.Mult) and (isinstance(val_node.left, ast.List) or isinstance(val_node.right, ast.List)):
+                kind = "list_alloc"
+                self.current_func["operations"].append({
+                    "type": "list_alloc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+                self.current_func["_list_vars"].add(var_name)
+            elif isinstance(val_node, ast.Call) and self._get_name(val_node.func) in ("sorted", "sort"):
+                self.current_func["operations"].append({
+                    "type": "sorting_call",
+                    "lineno": lineno,
+                    "target": self._get_name(val_node.func),
+                    "var": var_name
+                })
+                self.current_func["_list_vars"].add(var_name)
+            elif isinstance(val_node, ast.BinOp) and isinstance(val_node.op, (ast.FloorDiv, ast.RShift)):
+                self.current_func["operations"].append({
+                    "type": "bisection_calc",
+                    "lineno": lineno,
+                    "var": var_name
+                })
+
+            self.current_func["var_defs"][var_name] = {
+                "lineno": lineno,
+                "deps": val_names,
+                "kind": kind
+            }
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            has_paired = isinstance(val_node, (ast.Tuple, ast.List)) and len(val_node.elts) == len(target.elts)
+            for idx, elt in enumerate(target.elts):
+                elt_val = val_node.elts[idx] if has_paired else val_node
+                elt_deps = list(self._collect_names(elt_val)) if has_paired else val_names
+                self._record_assign_target(elt, elt_val, elt_deps, lineno)
+        elif isinstance(target, ast.Subscript):
+            sub_var = self._get_name(target.value)
+            key_vars = list(self._collect_names(target.slice))
+            self.current_func["var_mutations"].append({
+                "var": sub_var,
+                "lineno": lineno,
+                "key_deps": key_vars,
+                "val_deps": val_names,
+                "kind": "subscript_assign"
+            })
+            op_type = "list_write" if sub_var in self.current_func.get("_list_vars", set()) else ("dict_write" if sub_var in self.current_func.get("_dict_vars", set()) else "subscript_write")
+            self.current_func["operations"].append({
+                "type": op_type,
+                "lineno": lineno,
+                "var": sub_var
+            })
+
     def visit_Assign(self, node):
         if self.current_func:
             val_names = list(self._collect_names(node.value))
             for target in node.targets:
-                if isinstance(target, ast.Name):
-                    var_name = target.id
-                    kind = "assign"
-                    if isinstance(node.value, ast.Dict):
-                        kind = "dict_alloc"
-                        self.current_func["operations"].append({
-                            "type": "dict_alloc",
-                            "lineno": node.lineno,
-                            "var": var_name
-                        })
-                    elif isinstance(node.value, ast.Call) and self._get_name(node.value.func) in ("dict", "defaultdict", "Counter"):
-                        kind = "dict_alloc"
-                        self.current_func["operations"].append({
-                            "type": "dict_alloc",
-                            "lineno": node.lineno,
-                            "var": var_name
-                        })
-                    elif isinstance(node.value, ast.Set):
-                        kind = "set_alloc"
-                        self.current_func["operations"].append({
-                            "type": "set_alloc",
-                            "lineno": node.lineno,
-                            "var": var_name
-                        })
-                    elif isinstance(node.value, ast.Call) and self._get_name(node.value.func) == "set":
-                        kind = "set_alloc"
-                        self.current_func["operations"].append({
-                            "type": "set_alloc",
-                            "lineno": node.lineno,
-                            "var": var_name
-                        })
-                    elif isinstance(node.value, ast.List):
-                        kind = "list_alloc"
-                        self.current_func["operations"].append({
-                            "type": "list_alloc",
-                            "lineno": node.lineno,
-                            "var": var_name
-                        })
-                    elif isinstance(node.value, ast.Call) and self._get_name(node.value.func) in ("sorted", "sort"):
-                        self.current_func["operations"].append({
-                            "type": "sorting_call",
-                            "lineno": node.lineno,
-                            "target": self._get_name(node.value.func),
-                            "var": var_name
-                        })
+                self._record_assign_target(target, node.value, val_names, node.lineno)
+        self.generic_visit(node)
 
-                    self.current_func["var_defs"][var_name] = {
-                        "lineno": node.lineno,
-                        "deps": val_names,
-                        "kind": kind
-                    }
-                elif isinstance(target, ast.Subscript):
-                    sub_var = self._get_name(target.value)
-                    key_vars = list(self._collect_names(target.slice))
-                    self.current_func["var_mutations"].append({
-                        "var": sub_var,
-                        "lineno": node.lineno,
-                        "key_deps": key_vars,
-                        "val_deps": val_names,
-                        "kind": "subscript_assign"
-                    })
-                    self.current_func["operations"].append({
-                        "type": "dict_write",
-                        "lineno": node.lineno,
-                        "var": sub_var
-                    })
-
+    def visit_AnnAssign(self, node):
+        if self.current_func and node.value is not None:
+            val_names = list(self._collect_names(node.value))
+            self._record_assign_target(node.target, node.value, val_names, node.lineno)
         self.generic_visit(node)
 
     def visit_DictComp(self, node):
@@ -276,8 +329,9 @@ class ASTExtractor(ast.NodeVisitor):
                     "val_deps": val_names,
                     "kind": "subscript_aug_assign"
                 })
+                op_type = "list_write" if sub_var in self.current_func.get("_list_vars", set()) else ("dict_write" if sub_var in self.current_func.get("_dict_vars", set()) else "subscript_write")
                 self.current_func["operations"].append({
-                    "type": "dict_write",
+                    "type": op_type,
                     "lineno": node.lineno,
                     "var": sub_var
                 })
@@ -304,6 +358,61 @@ class ASTExtractor(ast.NodeVisitor):
                         "var": var_name,
                         "op": "dec"
                     })
+                elif isinstance(node.op, ast.BitXor):
+                    self.current_func["operations"].append({
+                        "type": "bitwise_xor",
+                        "lineno": node.lineno,
+                        "var": var_name
+                    })
+                elif isinstance(node.op, ast.BitAnd):
+                    self.current_func["operations"].append({
+                        "type": "bitwise_and",
+                        "lineno": node.lineno,
+                        "var": var_name
+                    })
+                elif isinstance(node.op, ast.BitOr):
+                    self.current_func["operations"].append({
+                        "type": "bitwise_or",
+                        "lineno": node.lineno,
+                        "var": var_name
+                    })
+                elif isinstance(node.op, (ast.LShift, ast.RShift)):
+                    self.current_func["operations"].append({
+                        "type": "bitwise_shift",
+                        "lineno": node.lineno,
+                        "var": var_name
+                    })
+        self.generic_visit(node)
+
+    def visit_BinOp(self, node):
+        if self.current_func:
+            op_type = None
+            if isinstance(node.op, ast.BitXor):
+                op_type = "bitwise_xor"
+            elif isinstance(node.op, ast.BitAnd):
+                op_type = "bitwise_and"
+            elif isinstance(node.op, ast.BitOr):
+                op_type = "bitwise_or"
+            elif isinstance(node.op, ast.LShift):
+                op_type = "bitwise_shift"
+            elif isinstance(node.op, ast.RShift):
+                op_type = "bitwise_shift"
+
+            if op_type:
+                self.current_func["operations"].append({
+                    "type": op_type,
+                    "lineno": node.lineno,
+                    "var": ""
+                })
+        self.generic_visit(node)
+
+    def visit_UnaryOp(self, node):
+        if self.current_func and isinstance(node.op, ast.Invert):
+            self.current_func["operations"].append({
+                "type": "bitwise_not",
+                "lineno": node.lineno,
+                "var": ""
+            })
         self.generic_visit(node)
 
     def visit_Subscript(self, node):
@@ -316,11 +425,24 @@ class ASTExtractor(ast.NodeVisitor):
                 "key_vars": key_vars,
                 "kind": "subscript_read"
             })
-            self.current_func["operations"].append({
-                "type": "dict_read",
-                "lineno": node.lineno,
-                "var": sub_var
-            })
+            if sub_var in self.current_func.get("_dict_vars", set()):
+                self.current_func["operations"].append({
+                    "type": "dict_read",
+                    "lineno": node.lineno,
+                    "var": sub_var
+                })
+            elif sub_var in self.current_func.get("_list_vars", set()):
+                self.current_func["operations"].append({
+                    "type": "list_read",
+                    "lineno": node.lineno,
+                    "var": sub_var
+                })
+            else:
+                self.current_func["operations"].append({
+                    "type": "subscript_read",
+                    "lineno": node.lineno,
+                    "var": sub_var
+                })
         self.generic_visit(node)
 
     def visit_Compare(self, node):
@@ -363,9 +485,11 @@ class ASTExtractor(ast.NodeVisitor):
     def visit_If(self, node):
         if self.current_func:
             cond_vars = list(self._collect_names(node.test))
+            has_return = any(isinstance(stmt, ast.Return) for stmt in ast.walk(node))
             self.current_func["if_guards"].append({
                 "lineno": node.lineno,
-                "cond_vars": cond_vars
+                "cond_vars": cond_vars,
+                "has_return": has_return
             })
         self.generic_visit(node)
 
@@ -402,6 +526,10 @@ def main():
         tree = ast.parse(source)
         extractor = ASTExtractor()
         extractor.visit(tree)
+        for fn in extractor.functions:
+            fn.pop("_dict_vars", None)
+            fn.pop("_list_vars", None)
+            fn.pop("_set_vars", None)
         print(json.dumps({
             "status": "SUCCESS",
             "functions": extractor.functions,

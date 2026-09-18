@@ -69,15 +69,19 @@ type WhileLoopNode struct {
 }
 
 type IfGuardNode struct {
-	LineNo   int      `json:"lineno"`
-	CondVars []string `json:"cond_vars"`
+	LineNo    int      `json:"lineno"`
+	CondVars  []string `json:"cond_vars"`
+	HasReturn bool     `json:"has_return,omitempty"`
 }
 
-// ComputeReachableFunctions performs BFS from entrypoint to find reachable functions.
 func ComputeReachableFunctions(functions []FunctionNode, contract AnalysisContract) map[string]*FunctionNode {
-	funcMap := make(map[string]*FunctionNode, len(functions))
-	for i := range functions {
-		funcMap[functions[i].Name] = &functions[i]
+	funcNodes := make([]FunctionNode, len(functions))
+	copy(funcNodes, functions)
+
+	funcMap := make(map[string]*FunctionNode, len(funcNodes))
+	for i := range funcNodes {
+		funcNodes[i].Reachable = false
+		funcMap[funcNodes[i].Name] = &funcNodes[i]
 	}
 
 	entrypoint := contract.Entrypoint
@@ -100,10 +104,10 @@ func ComputeReachableFunctions(functions []FunctionNode, contract AnalysisContra
 	if !exists {
 		normProb := strings.ToLower(strings.ReplaceAll(contract.ProblemID, "_", ""))
 		normEntry := strings.ToLower(strings.ReplaceAll(entrypoint, "_", ""))
-		for i := range functions {
-			fnNorm := strings.ToLower(strings.ReplaceAll(functions[i].Name, "_", ""))
+		for i := range funcNodes {
+			fnNorm := strings.ToLower(strings.ReplaceAll(funcNodes[i].Name, "_", ""))
 			if fnNorm == normProb || fnNorm == normEntry || fnNorm == "solve" || fnNorm == "solution" {
-				entry = &functions[i]
+				entry = &funcNodes[i]
 				exists = true
 				break
 			}
@@ -112,9 +116,9 @@ func ComputeReachableFunctions(functions []FunctionNode, contract AnalysisContra
 
 	if !exists {
 		var topLevel []*FunctionNode
-		for i := range functions {
-			if functions[i].ParentName == "" {
-				topLevel = append(topLevel, &functions[i])
+		for i := range funcNodes {
+			if funcNodes[i].ParentName == "" {
+				topLevel = append(topLevel, &funcNodes[i])
 			}
 		}
 		if len(topLevel) == 1 {
@@ -131,22 +135,12 @@ func ComputeReachableFunctions(functions []FunctionNode, contract AnalysisContra
 	entry.Reachable = true
 	reachable[entry.Name] = entry
 
-	for len(queue) > 0 {
-		curr := queue[0]
-		queue = queue[1:]
+	for head := 0; head < len(queue); head++ {
+		curr := queue[head]
 
-		// 1. Direct calls
+		// 1. Direct calls (including calls to reachable helpers)
 		for _, call := range curr.Calls {
 			if target, found := funcMap[call.Name]; found && !target.Reachable {
-				target.Reachable = true
-				reachable[target.Name] = target
-				queue = append(queue, target)
-			}
-		}
-
-		// 2. Nested child functions defined inside curr
-		for _, target := range funcMap {
-			if target.ParentName == curr.Name && !target.Reachable {
 				target.Reachable = true
 				reachable[target.Name] = target
 				queue = append(queue, target)

@@ -37,6 +37,9 @@ func NewDetectorRegistry() *DetectorRegistry {
 			&DPDetector{},
 			&ArraysDetector{},
 			&BruteForceDetector{},
+			&BitManipulationDetector{},
+			&TrieDetector{},
+			&GreedyDetector{},
 		},
 	}
 }
@@ -72,11 +75,23 @@ func (d *HashMapDetector) Detect(
 		freqOutputRelevant := false
 
 		dictVars := make(map[string]bool)
+		listVars := make(map[string]bool)
+		for _, arg := range fn.Args {
+			argLower := strings.ToLower(arg)
+			if strings.Contains(argLower, "num") || strings.Contains(argLower, "arr") ||
+				strings.Contains(argLower, "list") || strings.Contains(argLower, "seq") ||
+				strings.Contains(argLower, "val") || strings.Contains(argLower, "element") {
+				listVars[arg] = true
+			}
+		}
 
 		for _, op := range fn.Operations {
 			switch op.Type {
+			case "list_alloc":
+				listVars[op.Var] = true
 			case "dict_alloc":
 				dictVars[op.Var] = true
+				delete(listVars, op.Var)
 				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
 				if rel {
 					mapOutputRelevant = true
@@ -89,20 +104,22 @@ func (d *HashMapDetector) Detect(
 					OutputRelevant: rel,
 				})
 			case "dict_write":
-				dictVars[op.Var] = true
-				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
-				if rel {
-					mapOutputRelevant = true
+				if !listVars[op.Var] {
+					dictVars[op.Var] = true
+					rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+					if rel {
+						mapOutputRelevant = true
+					}
+					mapEvidence = append(mapEvidence, model.Evidence{
+						Type:           "map_write",
+						Line:           op.LineNo,
+						Description:    fmt.Sprintf("Key-value write on map '%s'", op.Var),
+						Reachable:      isReachable,
+						OutputRelevant: rel,
+					})
 				}
-				mapEvidence = append(mapEvidence, model.Evidence{
-					Type:           "map_write",
-					Line:           op.LineNo,
-					Description:    fmt.Sprintf("Key-value write on map '%s'", op.Var),
-					Reachable:      isReachable,
-					OutputRelevant: rel,
-				})
 			case "dict_read":
-				if dictVars[op.Var] {
+				if dictVars[op.Var] && !listVars[op.Var] {
 					rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
 					if rel {
 						mapOutputRelevant = true
@@ -117,6 +134,7 @@ func (d *HashMapDetector) Detect(
 				}
 			case "dict_get":
 				dictVars[op.Var] = true
+				delete(listVars, op.Var)
 				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
 				if rel {
 					mapOutputRelevant = true
@@ -137,7 +155,7 @@ func (d *HashMapDetector) Detect(
 					OutputRelevant: rel,
 				})
 			case "membership_check":
-				if dictVars[op.Var] || isReachable {
+				if dictVars[op.Var] && !listVars[op.Var] {
 					rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
 					if rel {
 						mapOutputRelevant = true
@@ -350,7 +368,19 @@ func (d *SortingDetector) Detect(
 
 		for _, op := range fn.Operations {
 			if op.Type == "sorting_call" {
-				rel := isReachable && (op.Var == "" || IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var))
+				rel := false
+				if isReachable {
+					if op.Var != "" {
+						rel = IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+					} else {
+						for _, ret := range fn.Returns {
+							if ret.LineNo == op.LineNo || strings.Contains(ret.Raw, "sorted") || strings.Contains(ret.Raw, "sort") {
+								rel = true
+								break
+							}
+						}
+					}
+				}
 				if rel {
 					outRel = true
 				}
@@ -413,26 +443,29 @@ func (d *TwoPointersDetector) Detect(
 		for _, wl := range fn.WhileLoops {
 			expr := strings.ToLower(wl.Expr)
 			if strings.Contains(expr, "<") || strings.Contains(expr, "<=") {
-				rel := isReachable
-				if rel {
-					outRel = true
-				}
-				evidence = append(evidence, model.Evidence{
-					Type:           "two_pointer_while_condition",
-					Line:           wl.LineNo,
-					Description:    fmt.Sprintf("Convergent pointer loop condition: %s", wl.Expr),
-					Reachable:      isReachable,
-					OutputRelevant: rel,
-				})
-
-				if (hasInc && hasDec) || len(wl.CondVars) >= 2 {
-					oppositeEvidence = append(oppositeEvidence, model.Evidence{
-						Type:           "opposite_end_pointers",
+				isTwoPtr := (hasInc && hasDec) || (len(wl.CondVars) >= 2 && (hasInc || hasDec))
+				if isTwoPtr {
+					rel := isReachable
+					if rel {
+						outRel = true
+					}
+					evidence = append(evidence, model.Evidence{
+						Type:           "two_pointer_while_condition",
 						Line:           wl.LineNo,
-						Description:    "Pointers converging from opposite boundaries towards center",
+						Description:    fmt.Sprintf("Convergent pointer loop condition: %s", wl.Expr),
 						Reachable:      isReachable,
 						OutputRelevant: rel,
 					})
+
+					if (hasInc && hasDec) || len(wl.CondVars) >= 2 {
+						oppositeEvidence = append(oppositeEvidence, model.Evidence{
+							Type:           "opposite_end_pointers",
+							Line:           wl.LineNo,
+							Description:    "Pointers converging from opposite boundaries towards center",
+							Reachable:      isReachable,
+							OutputRelevant: rel,
+						})
+					}
 				}
 			}
 		}
@@ -483,11 +516,30 @@ func (d *SlidingWindowDetector) Detect(
 		var evidence []model.Evidence
 		outRel := false
 
+		stepVars := make(map[string]bool)
+		for _, op := range fn.Operations {
+			if (op.Type == "pointer_step" || op.Type == "list_pop" || op.Type == "set_remove") && op.Var != "" {
+				stepVars[op.Var] = true
+			}
+		}
+
+		hasWindowKeyword := false
+		for v := range fn.VarDefs {
+			vLow := strings.ToLower(v)
+			if strings.Contains(vLow, "window") || strings.Contains(vLow, "sub") || strings.Contains(vLow, "span") {
+				hasWindowKeyword = true
+				break
+			}
+		}
+
+		isGenuineWindow := len(stepVars) >= 2 || hasWindowKeyword || len(fn.WhileLoops) > 1
+
 		for _, wl := range fn.WhileLoops {
 			expr := strings.ToLower(wl.Expr)
-			if strings.Contains(expr, ">") || strings.Contains(expr, "in") || strings.Contains(expr, "<") {
+			hasInWord := strings.Contains(expr, " in ") || strings.HasPrefix(expr, "in ") || strings.HasSuffix(expr, " in")
+			if (strings.Contains(expr, ">") || strings.Contains(expr, "<") || hasInWord) && isGenuineWindow {
 				for _, op := range fn.Operations {
-					if op.Type == "dict_alloc" || op.Type == "set_alloc" || op.Type == "dict_write" {
+					if op.Type == "dict_alloc" || op.Type == "set_alloc" || op.Type == "dict_write" || op.Type == "set_remove" {
 						rel := isReachable
 						if rel {
 							outRel = true
@@ -702,11 +754,25 @@ func (d *BinarySearchDetector) Detect(
 		outRel := false
 
 		hasMid := false
-		for varName, def := range fn.VarDefs {
-			if strings.Contains(strings.ToLower(varName), "mid") || def.Kind == "assign" {
+		for _, op := range fn.Operations {
+			if op.Type == "bisection_calc" {
+				hasMid = true
+				break
+			}
+		}
+		if !hasMid {
+			for varName, def := range fn.VarDefs {
+				lowVar := strings.ToLower(varName)
+				isMidName := lowVar == "mid" || lowVar == "middle" || lowVar == "midpoint" || strings.HasPrefix(lowVar, "mid_") || strings.HasSuffix(lowVar, "_mid")
+				if isMidName {
+					hasMid = true
+					break
+				}
 				for _, dep := range def.Deps {
-					if strings.Contains(strings.ToLower(dep), "mid") {
+					lowDep := strings.ToLower(dep)
+					if lowDep == "mid" || lowDep == "middle" || lowDep == "midpoint" {
 						hasMid = true
+						break
 					}
 				}
 			}
@@ -714,7 +780,7 @@ func (d *BinarySearchDetector) Detect(
 
 		for _, wl := range fn.WhileLoops {
 			expr := strings.ToLower(wl.Expr)
-			if (strings.Contains(expr, "<=") || strings.Contains(expr, "<")) && (hasMid || len(wl.CondVars) >= 2) {
+			if (strings.Contains(expr, "<=") || strings.Contains(expr, "<")) && hasMid {
 				rel := isReachable
 				if rel {
 					outRel = true
@@ -727,6 +793,28 @@ func (d *BinarySearchDetector) Detect(
 					OutputRelevant: rel,
 				})
 			}
+		}
+
+		isRecursive := false
+		for _, call := range fn.Calls {
+			if call.Name == fn.Name {
+				isRecursive = true
+				break
+			}
+		}
+
+		if hasMid && isRecursive {
+			rel := isReachable
+			if rel {
+				outRel = true
+			}
+			evidence = append(evidence, model.Evidence{
+				Type:           "binary_search_recursion",
+				Line:           fn.LineNo,
+				Description:    fmt.Sprintf("Binary search recursive bisection helper: %s", fn.Name),
+				Reachable:      isReachable,
+				OutputRelevant: rel,
+			})
 		}
 
 		if len(evidence) > 0 {
@@ -790,17 +878,46 @@ func (d *RecursionDFSDetector) Detect(
 				Role:           model.RolePrimary,
 				Status:         "DETECTED",
 			})
-			concepts = append(concepts, model.DetectedConcept{
-				ConceptID:      "dfs",
-				Name:           "Depth-First Search (DFS)",
-				Category:       "graphs",
-				Evidence:       recEvidence,
-				Reachable:      isReachable,
-				OutputRelevant: outRel,
-				Confidence:     0.90,
-				Role:           model.RolePrimary,
-				Status:         "DETECTED",
-			})
+
+			hasDFSSignal := false
+			fnLower := strings.ToLower(fn.Name)
+			if strings.Contains(fnLower, "dfs") || strings.Contains(fnLower, "traverse") || strings.Contains(fnLower, "search") {
+				hasDFSSignal = true
+			}
+			for _, arg := range fn.Args {
+				argLow := strings.ToLower(arg)
+				if strings.Contains(argLow, "node") || strings.Contains(argLow, "graph") ||
+					strings.Contains(argLow, "tree") || strings.Contains(argLow, "visited") ||
+					strings.Contains(argLow, "seen") || strings.Contains(argLow, "neighbor") ||
+					strings.Contains(argLow, "adj") || strings.Contains(argLow, "grid") ||
+					strings.Contains(argLow, "row") || strings.Contains(argLow, "col") {
+					hasDFSSignal = true
+					break
+				}
+			}
+			for varName := range fn.VarDefs {
+				vLow := strings.ToLower(varName)
+				if strings.Contains(vLow, "visited") || strings.Contains(vLow, "seen") ||
+					strings.Contains(vLow, "neighbor") || strings.Contains(vLow, "adj") ||
+					strings.Contains(vLow, "graph") {
+					hasDFSSignal = true
+					break
+				}
+			}
+
+			if hasDFSSignal {
+				concepts = append(concepts, model.DetectedConcept{
+					ConceptID:      "dfs",
+					Name:           "Depth-First Search (DFS)",
+					Category:       "graphs",
+					Evidence:       recEvidence,
+					Reachable:      isReachable,
+					OutputRelevant: outRel,
+					Confidence:     0.90,
+					Role:           model.RolePrimary,
+					Status:         "DETECTED",
+				})
+			}
 		}
 	}
 
@@ -820,9 +937,35 @@ func (d *BFSDetector) Detect(
 	for _, fn := range functions {
 		isReachable := reachableFuncs[fn.Name] != nil
 		hasQueue := false
+		hasQueueAppend := false
 		hasWhile := len(fn.WhileLoops) > 0
 		var evidence []model.Evidence
 		outRel := false
+
+		hasGraphSignal := false
+		fnLower := strings.ToLower(fn.Name)
+		if strings.Contains(fnLower, "bfs") || strings.Contains(fnLower, "traverse") || strings.Contains(fnLower, "level") {
+			hasGraphSignal = true
+		}
+		for _, arg := range fn.Args {
+			argLow := strings.ToLower(arg)
+			if strings.Contains(argLow, "node") || strings.Contains(argLow, "graph") ||
+				strings.Contains(argLow, "tree") || strings.Contains(argLow, "visited") ||
+				strings.Contains(argLow, "seen") || strings.Contains(argLow, "adj") ||
+				strings.Contains(argLow, "root") || strings.Contains(argLow, "grid") {
+				hasGraphSignal = true
+				break
+			}
+		}
+		for varName := range fn.VarDefs {
+			vLow := strings.ToLower(varName)
+			if strings.Contains(vLow, "visited") || strings.Contains(vLow, "seen") ||
+				strings.Contains(vLow, "neighbor") || strings.Contains(vLow, "adj") ||
+				strings.Contains(vLow, "graph") || strings.Contains(vLow, "level") {
+				hasGraphSignal = true
+				break
+			}
+		}
 
 		for _, op := range fn.Operations {
 			if op.Type == "queue_op" {
@@ -838,10 +981,12 @@ func (d *BFSDetector) Detect(
 					Reachable:      isReachable,
 					OutputRelevant: rel,
 				})
+			} else if op.Type == "list_append" {
+				hasQueueAppend = true
 			}
 		}
 
-		if hasQueue && hasWhile {
+		if hasQueue && hasWhile && (hasQueueAppend || hasGraphSignal) {
 			concepts = append(concepts, model.DetectedConcept{
 				ConceptID:      "bfs",
 				Name:           "Breadth-First Search (BFS)",
@@ -1072,8 +1217,8 @@ func (d *ArraysDetector) Detect(
 					Reachable:      isReachable,
 					OutputRelevant: rel,
 				})
-			case "list_append", "list_pop":
-				rel := isReachable && IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var)
+			case "list_append", "list_pop", "list_write", "list_read", "subscript_read":
+				rel := isReachable && (op.Var == "" || IsVariableOutputRelevant(relevanceMap, fn.Name, op.Var))
 				if rel {
 					arrayOutputRelevant = true
 				}
@@ -1195,3 +1340,192 @@ func (d *BruteForceDetector) Detect(
 
 	return concepts
 }
+
+// 15. Bit Manipulation Detector
+type BitManipulationDetector struct{}
+
+func (d *BitManipulationDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		outRel := false
+
+		for _, op := range fn.Operations {
+			if op.Type == "bitwise_xor" || op.Type == "bitwise_and" || op.Type == "bitwise_or" || op.Type == "bitwise_shift" || op.Type == "bitwise_not" {
+				rel := isReachable
+				if rel {
+					outRel = true
+				}
+				evidence = append(evidence, model.Evidence{
+					Type:           op.Type,
+					Line:           op.LineNo,
+					Description:    fmt.Sprintf("Bitwise operation (%s)", op.Type),
+					Reachable:      isReachable,
+					OutputRelevant: rel,
+				})
+			}
+		}
+
+		if len(evidence) > 0 {
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "bit_manipulation",
+				Name:           "Bit Manipulation",
+				Category:       "bit_manipulation",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 16. Trie Detector
+type TrieDetector struct{}
+
+func (d *TrieDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		outRel := false
+		isTrie := false
+
+		for _, call := range fn.Calls {
+			cLower := strings.ToLower(call.Name)
+			if strings.Contains(cLower, "trie") || cLower == "insert" || cLower == "search" || cLower == "startswith" || strings.HasSuffix(cLower, ".insert") || strings.HasSuffix(cLower, ".search") || strings.HasSuffix(cLower, ".startswith") {
+				isTrie = true
+				evidence = append(evidence, model.Evidence{
+					Type:           "trie_operation",
+					Line:           call.LineNo,
+					Description:    fmt.Sprintf("Trie method invocation '%s'", call.Name),
+					Reachable:      isReachable,
+					OutputRelevant: isReachable,
+				})
+			}
+		}
+
+		for varName, def := range fn.VarDefs {
+			vLower := strings.ToLower(varName)
+			if strings.Contains(vLower, "trie") || strings.Contains(vLower, "children") || strings.Contains(vLower, "is_end") {
+				isTrie = true
+				evidence = append(evidence, model.Evidence{
+					Type:           "trie_structure",
+					Line:           def.LineNo,
+					Description:    fmt.Sprintf("Trie structure variable '%s'", varName),
+					Reachable:      isReachable,
+					OutputRelevant: isReachable,
+				})
+			}
+		}
+
+		if isTrie {
+			outRel = isReachable
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "trie",
+				Name:           "Trie (Prefix Tree)",
+				Category:       "trie",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+// 17. Greedy Detector
+type GreedyDetector struct{}
+
+func (d *GreedyDetector) Detect(
+	functions []FunctionNode,
+	reachableFuncs map[string]*FunctionNode,
+	relevanceMap map[string]*FunctionRelevance,
+) []model.DetectedConcept {
+	var concepts []model.DetectedConcept
+
+	for _, fn := range functions {
+		isReachable := reachableFuncs[fn.Name] != nil
+		var evidence []model.Evidence
+		outRel := false
+		isGreedy := false
+
+		// Check for greedy variable names
+		for varName, def := range fn.VarDefs {
+			vLower := strings.ToLower(varName)
+			if strings.Contains(vLower, "reach") || strings.Contains(vLower, "greedy") || strings.Contains(vLower, "farthest") || strings.Contains(vLower, "best") || strings.Contains(vLower, "gas") || strings.Contains(vLower, "interval") {
+				isGreedy = true
+				evidence = append(evidence, model.Evidence{
+					Type:           "greedy_variable",
+					Line:           def.LineNo,
+					Description:    fmt.Sprintf("Greedy tracking variable '%s'", varName),
+					Reachable:      isReachable,
+					OutputRelevant: isReachable,
+				})
+			}
+		}
+
+		// Check for max/min call inside function
+		for _, call := range fn.Calls {
+			cLower := strings.ToLower(call.Name)
+			if cLower == "max" || cLower == "min" {
+				// Combined with iteration over elements or greedy decision
+				for varName := range fn.VarDefs {
+					vLower := strings.ToLower(varName)
+					if strings.Contains(vLower, "reach") || strings.Contains(vLower, "curr") || strings.Contains(vLower, "max") || strings.Contains(vLower, "min") || strings.Contains(vLower, "ans") {
+						isGreedy = true
+						evidence = append(evidence, model.Evidence{
+							Type:           "greedy_choice",
+							Line:           call.LineNo,
+							Description:    fmt.Sprintf("Locally optimal choice via '%s()'", call.Name),
+							Reachable:      isReachable,
+							OutputRelevant: isReachable,
+						})
+						break
+					}
+				}
+				if isGreedy {
+					break
+				}
+			}
+		}
+
+		if isGreedy && len(evidence) > 0 {
+			outRel = isReachable
+			concepts = append(concepts, model.DetectedConcept{
+				ConceptID:      "greedy",
+				Name:           "Greedy",
+				Category:       "greedy",
+				Evidence:       evidence,
+				Reachable:      isReachable,
+				OutputRelevant: outRel,
+				Confidence:     0.95,
+				Role:           model.RolePrimary,
+				Status:         "DETECTED",
+			})
+		}
+	}
+
+	return concepts
+}
+
+

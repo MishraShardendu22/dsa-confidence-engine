@@ -52,10 +52,11 @@
   aliases:
     - hash set
     - hashset
-    - set
+    - set of elements
     - set of seen
     - seen set
     - visited set
+    - unique set
   keywords:
     - set
     - seen
@@ -80,6 +81,11 @@
   aliases:
     - frequency counting
     - frequency count
+    - frequency map
+    - frequency maps
+    - frequency table
+    - frequency dictionary
+    - frequency dictionaries
     - character count
     - element count
     - tally
