@@ -10,7 +10,7 @@ import (
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/repository"
 )
 
-func TestDataset2KIngestionAndValidation(t *testing.T) {
+func TestDatasetScaleIngestionAndValidation(t *testing.T) {
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "scaled_test.db")
 
@@ -29,15 +29,15 @@ func TestDataset2KIngestionAndValidation(t *testing.T) {
 		t.Fatalf("failed to load problems from %s: %v", problemsDir, err)
 	}
 	elapsed := time.Since(start)
-	t.Logf("Loaded 2,000+ problems in %v", elapsed)
+	t.Logf("Loaded 3,600+ problems in %v", elapsed)
 
 	problems, err := repo.ListProblems(ctx)
 	if err != nil {
 		t.Fatalf("failed to list problems: %v", err)
 	}
 
-	if len(problems) < 2000 {
-		t.Fatalf("expected at least 2000 problems, got %d", len(problems))
+	if len(problems) < 3600 {
+		t.Fatalf("expected at least 3600 problems, got %d", len(problems))
 	}
 	t.Logf("Successfully verified %d problems loaded into repository", len(problems))
 

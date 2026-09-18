@@ -2,6 +2,7 @@ package evaluator_test
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,23 +40,33 @@ func setupPiyushBenchmarkEvaluator(t *testing.T) (*evaluator.Evaluator, map[stri
 
 	eval := evaluator.NewEvaluator(r, a, matcher, s, nil)
 
-	probDir := filepath.Join("..", "..", "data", "problems")
-	entries, err := filepath.Glob(filepath.Join(probDir, "*.yaml"))
-	if err != nil {
-		t.Fatalf("failed to glob problems: %v", err)
-	}
-
 	probMap := make(map[string]model.Problem)
-	for _, fpath := range entries {
-		data, err := os.ReadFile(fpath)
+	datasetPath := filepath.Join("..", "..", "data", "problems", "dataset_all.json")
+	if data, err := os.ReadFile(datasetPath); err == nil {
+		var list []model.Problem
+		if err := json.Unmarshal(data, &list); err == nil {
+			for _, p := range list {
+				probMap[p.ID] = p
+			}
+		}
+	}
+	if len(probMap) == 0 {
+		probDir := filepath.Join("..", "..", "data", "problems")
+		entries, err := filepath.Glob(filepath.Join(probDir, "*.yaml"))
 		if err != nil {
-			t.Fatalf("failed to read %s: %v", fpath, err)
+			t.Fatalf("failed to glob problems: %v", err)
 		}
-		var p model.Problem
-		if err := yaml.Unmarshal(data, &p); err != nil {
-			t.Fatalf("failed to unmarshal %s: %v", fpath, err)
+		for _, fpath := range entries {
+			data, err := os.ReadFile(fpath)
+			if err != nil {
+				t.Fatalf("failed to read %s: %v", fpath, err)
+			}
+			var p model.Problem
+			if err := yaml.Unmarshal(data, &p); err != nil {
+				t.Fatalf("failed to unmarshal %s: %v", fpath, err)
+			}
+			probMap[p.ID] = p
 		}
-		probMap[p.ID] = p
 	}
 
 	return eval, probMap

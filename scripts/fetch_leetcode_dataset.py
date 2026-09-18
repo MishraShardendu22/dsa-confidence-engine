@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """
-fetch_leetcode_dataset.py - Ingests 2,000 algorithmic problems from the public
-LeetCode GraphQL API, maps tags to the DSA Confidence Engine ontology, derives
-canonical function entrypoints, generates test cases, and outputs a production-grade
-dataset_2k.json conforming to data/schemas/problem.schema.json.
+fetch_leetcode_dataset.py - Ingests the entire catalog of LeetCode algorithmic
+problems (3,637+ questions) via public GraphQL, merges with handcrafted benchmark
+problems, normalizes metadata and test cases to data/schemas/problem.schema.json,
+and outputs data/problems/dataset_all.json.
 """
 
+import glob
 import json
 import os
 import re
 import sys
 import time
 import urllib.request
+import yaml
 
 TAG_TO_DSA_CONCEPTS = {
     "array": ["arrays"],
@@ -56,7 +58,6 @@ def to_camel_case(snake_str):
     return components[0] + "".join(x.title() for x in components[1:])
 
 def slug_to_identifiers(slug):
-    # e.g. "two-sum" -> snake: "two_sum", camel: "twoSum"
     clean = re.sub(r"[^a-zA-Z0-9]+", "_", slug).strip("_").lower()
     if not clean:
         clean = "solve"
@@ -65,11 +66,30 @@ def slug_to_identifiers(slug):
     camel = to_camel_case(clean)
     return clean, camel
 
-def fetch_leetcode_page(skip, limit=100):
+def get_total_count():
     query = """
     query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
       problemsetQuestionList: questionList(categorySlug: $categorySlug, limit: $limit, skip: $skip, filters: $filters) {
         total: totalNum
+      }
+    }
+    """
+    req = urllib.request.Request(
+        "https://leetcode.com/graphql",
+        data=json.dumps({
+            "query": query,
+            "variables": {"categorySlug": "algorithms", "skip": 0, "limit": 1, "filters": {}}
+        }).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"}
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        return data["data"]["problemsetQuestionList"]["total"]
+
+def fetch_leetcode_page(skip, limit=100):
+    query = """
+    query problemsetQuestionList($categorySlug: String, $limit: Int, $skip: Int, $filters: QuestionListFilterInput) {
+      problemsetQuestionList: questionList(categorySlug: $categorySlug, limit: $limit, skip: $skip, filters: $filters) {
         questions: data {
           questionId
           title
@@ -96,7 +116,7 @@ def fetch_leetcode_page(skip, limit=100):
         }).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         }
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
@@ -108,16 +128,16 @@ def build_problem_record(raw_q):
     title = raw_q.get("title", f"Problem {qid}")
     slug = raw_q.get("titleSlug", f"problem_{qid}")
     difficulty = raw_q.get("difficulty", "Medium")
+    if difficulty not in ("Easy", "Medium", "Hard"):
+        difficulty = "Medium"
 
     snake_id, camel_id = slug_to_identifiers(slug)
     problem_id = f"lc_{qid}_{snake_id}"
 
-    # Extract topic tags
     raw_tags = raw_q.get("topicTags") or []
     topic_tags = [t["slug"] for t in raw_tags if "slug" in t]
 
     primary_concepts = []
-    optional_concepts = []
     accepted_strategies = []
 
     for tag in topic_tags:
@@ -125,7 +145,6 @@ def build_problem_record(raw_q):
             for c in TAG_TO_DSA_CONCEPTS[tag]:
                 if c not in primary_concepts:
                     primary_concepts.append(c)
-        # Strategy name
         strat = tag.replace("-", "_") + "_approach"
         if strat not in accepted_strategies:
             accepted_strategies.append(strat)
@@ -135,14 +154,10 @@ def build_problem_record(raw_q):
     if not accepted_strategies:
         accepted_strategies = ["optimal_approach", "iterative_solution"]
 
-    # Entrypoints
     entrypoint = camel_id
     aliases = list(dict.fromkeys([camel_id, snake_id, "solve", "solution"]))
-
-    # Starter code
     starter_code = f"def {entrypoint}(*args, **kwargs):\n    # Candidate implementation\n    pass\n"
 
-    # Synthetic representative tests for standardized validation
     tests = [
         {
             "id": "1",
@@ -175,7 +190,7 @@ def build_problem_record(raw_q):
         "tests": tests,
         "accepted_strategies": accepted_strategies,
         "required_concepts": [],
-        "optional_concepts": optional_concepts,
+        "optional_concepts": [],
         "primary_concepts": primary_concepts,
         "hints": [
             f"Analyze input constraints and consider {primary_concepts[0]} for optimal time complexity."
@@ -184,48 +199,82 @@ def build_problem_record(raw_q):
         "memory_limit_mb": 256
     }
 
+def load_handcrafted_yaml_problems(problems_dir):
+    records = []
+    yaml_files = sorted(glob.glob(os.path.join(problems_dir, "*.yaml")))
+    for yf in yaml_files:
+        try:
+            with open(yf, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            if not isinstance(data, dict) or "id" not in data:
+                continue
+
+            # Ensure all required metadata fields conform to schema
+            if not data.get("difficulty"):
+                data["difficulty"] = "Medium"
+            if not data.get("topic_tags"):
+                data["topic_tags"] = data.get("primary_concepts", ["algorithms"])
+            if not data.get("hints"):
+                data["hints"] = ["Focus on standard invariant conditions."]
+            if not data.get("time_limit_ms"):
+                data["time_limit_ms"] = 2000
+            if not data.get("memory_limit_mb"):
+                data["memory_limit_mb"] = 256
+            if not data.get("language"):
+                data["language"] = "python"
+            if not data.get("entrypoint"):
+                data["entrypoint"] = "solve"
+            if not data.get("entrypoint_aliases"):
+                data["entrypoint_aliases"] = [data["entrypoint"], "solution", "solve"]
+
+            # Ensure test cases have name
+            for idx, tc in enumerate(data.get("tests", [])):
+                if not tc.get("name"):
+                    tc["name"] = tc.get("description") or f"Test Case {idx+1}"
+
+            records.append(data)
+        except Exception as e:
+            print(f"[WARN] Failed to load {yf}: {e}")
+    print(f"[INFO] Loaded {len(records)} handcrafted problems from YAML files.")
+    return records
+
 def main():
-    target_count = 2000
+    problems_dir = os.path.join("data", "problems")
+    handcrafted = load_handcrafted_yaml_problems(problems_dir)
+
+    total_count = get_total_count()
+    print(f"[INFO] LeetCode total algorithm questions reported: {total_count}")
+
     batch_size = 100
-    all_problems = []
-    seen_ids = set()
+    pages = (total_count + batch_size - 1) // batch_size
+    all_problems = list(handcrafted)
+    seen_ids = set(p["id"] for p in all_problems)
 
-    print(f"[INFO] Starting ingestion of {target_count} LeetCode problems...")
-    pages = (target_count + batch_size - 1) // batch_size
-
+    print(f"[INFO] Fetching all {total_count} LeetCode algorithm problems across {pages} pages...")
     for page in range(pages):
         skip = page * batch_size
-        print(f"[INFO] Fetching questions {skip+1} to {skip+batch_size} (page {page+1}/{pages})...")
         try:
             questions = fetch_leetcode_page(skip, batch_size)
             if not questions:
-                print(f"[WARN] Empty page returned at skip={skip}, stopping early.")
                 break
-
             for q in questions:
                 rec = build_problem_record(q)
                 if rec["id"] not in seen_ids:
                     seen_ids.add(rec["id"])
                     all_problems.append(rec)
-                    if len(all_problems) >= target_count:
-                        break
-
-            print(f"[INFO] Successfully accumulated {len(all_problems)} unique problems.")
-            if len(all_problems) >= target_count:
-                break
-            time.sleep(0.2)  # Polite pacing
+            print(f"[INFO] Page {page+1}/{pages}: Accumulated {len(all_problems)} total unique problems.")
+            time.sleep(0.15)
         except Exception as e:
-            print(f"[ERROR] Failed fetching page {page+1}: {e}")
+            print(f"[ERROR] Error on page {page+1}: {e}")
             time.sleep(1)
 
-    print(f"[INFO] Total problems gathered: {len(all_problems)}")
+    print(f"[INFO] Total merged problems catalog: {len(all_problems)}")
 
-    out_path = os.path.join("data", "problems", "dataset_2k.json")
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    out_path = os.path.join(problems_dir, "dataset_all.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(all_problems, f, indent=2)
 
-    print(f"[SUCCESS] Written {len(all_problems)} problems to {out_path} ({os.path.getsize(out_path)/1024/1024:.2f} MB)")
+    print(f"[SUCCESS] Saved {len(all_problems)} problems to {out_path} ({os.path.getsize(out_path)/1024/1024:.2f} MB)")
 
 if __name__ == "__main__":
     main()

@@ -36,8 +36,8 @@ func TestDataset2KEvaluationPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to list problems: %v", err)
 	}
-	if len(allProblems) < 2000 {
-		t.Fatalf("expected >= 2000 problems loaded, got %d", len(allProblems))
+	if len(allProblems) < 3600 {
+		t.Fatalf("expected >= 3600 problems loaded, got %d", len(allProblems))
 	}
 
 	// Verify broad coverage across core algorithmic paradigms in dataset
