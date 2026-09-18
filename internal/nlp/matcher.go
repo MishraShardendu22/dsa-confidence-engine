@@ -104,6 +104,13 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 	claimedMap := make(map[string]*model.ClaimedConcept)
 
 	// Stage 1 & 2: Exact keyword & Alias matching (longest phrase priority)
+	type matchedSpan struct {
+		start     int
+		end       int
+		conceptID string
+	}
+	var occupiedSpans []matchedSpan
+
 	textPadded := " " + normText + " "
 	for _, entry := range m.sortedAliases {
 		needle := " " + entry.phrase + " "
@@ -111,8 +118,9 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 			continue
 		}
 
-		// Check all occurrences for non-negated usage
+		// Check all occurrences for non-negated usage and non-overlapping with already matched longer phrases
 		hasPositiveOccurrence := false
+		var newSpans []matchedSpan
 		searchStart := 0
 		for {
 			idx := strings.Index(textPadded[searchStart:], needle)
@@ -120,14 +128,35 @@ func (m *CascadeMatcher) Match(ctx context.Context, text string) ([]model.Claime
 				break
 			}
 			actualIdx := searchStart + idx
-			if !isNegatedOccurrence(textPadded, actualIdx) {
+			matchEnd := actualIdx + len(needle)
+
+			// Check if this occurrence is contained within an already matched longer phrase from an unrelated taxonomy branch
+			isSubsumed := false
+			for _, span := range occupiedSpans {
+				if actualIdx >= span.start && matchEnd <= span.end {
+					isStrictSubSpan := (actualIdx > span.start || matchEnd < span.end)
+					if isStrictSubSpan && entry.concept.ID != span.conceptID &&
+						!m.ontology.IsAncestor(entry.concept.ID, span.conceptID) &&
+						!m.ontology.IsAncestor(span.conceptID, entry.concept.ID) {
+						isSubsumed = true
+						break
+					}
+				}
+			}
+
+			if !isSubsumed && !isNegatedOccurrence(textPadded, actualIdx) {
 				hasPositiveOccurrence = true
-				break
+				newSpans = append(newSpans, matchedSpan{
+					start:     actualIdx,
+					end:       matchEnd,
+					conceptID: entry.concept.ID,
+				})
 			}
 			searchStart = actualIdx + len(needle)
 		}
 
 		if hasPositiveOccurrence {
+			occupiedSpans = append(occupiedSpans, newSpans...)
 			if _, exists := claimedMap[entry.concept.ID]; !exists {
 				claimedMap[entry.concept.ID] = &model.ClaimedConcept{
 					ConceptID:     entry.concept.ID,

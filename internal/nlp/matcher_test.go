@@ -156,4 +156,30 @@ func TestCascadeMatcher(t *testing.T) {
 			}
 		}
 	})
+
+	// 6. Test Sub-span Suppression
+	t.Run("topological sort does not falsely claim sorting", func(t *testing.T) {
+		text := "I detect cycles in the dependency graph using topological sort with Kahn's algorithm."
+		claimed, err := matcher.Match(ctx, text)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		hasTopo := false
+		hasSorting := false
+		for _, c := range claimed {
+			if c.ConceptID == "topological_sort" {
+				hasTopo = true
+			}
+			if c.ConceptID == "sorting" {
+				hasSorting = true
+			}
+		}
+		if !hasTopo {
+			t.Errorf("expected topological_sort to be claimed")
+		}
+		if hasSorting {
+			t.Errorf("sorting should NOT be claimed from compound phrase 'topological sort'")
+		}
+	})
 }
