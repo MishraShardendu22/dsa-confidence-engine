@@ -905,6 +905,31 @@ func (d *RecursionDFSDetector) Detect(
 				}
 			}
 
+			hasBacktrackingSignal := false
+			if strings.Contains(fnLower, "backtrack") || strings.Contains(fnLower, "subset") || strings.Contains(fnLower, "permute") || strings.Contains(fnLower, "comb") {
+				hasBacktrackingSignal = true
+			}
+			for _, op := range fn.Operations {
+				if op.Type == "stack_pop" || op.Type == "list_pop" || op.Type == "pop_call" {
+					hasBacktrackingSignal = true
+					break
+				}
+			}
+
+			if hasBacktrackingSignal {
+				concepts = append(concepts, model.DetectedConcept{
+					ConceptID:      "backtracking",
+					Name:           "Backtracking",
+					Category:       "backtracking",
+					Evidence:       recEvidence,
+					Reachable:      isReachable,
+					OutputRelevant: outRel,
+					Confidence:     0.95,
+					Role:           model.RolePrimary,
+					Status:         "DETECTED",
+				})
+			}
+
 			if hasDFSSignal {
 				concepts = append(concepts, model.DetectedConcept{
 					ConceptID:      "dfs",
