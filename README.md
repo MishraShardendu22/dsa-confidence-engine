@@ -221,25 +221,32 @@ Add the phrase to the concept's `aliases` list in `data/dsa/*.yaml`:
 ```
 
 ### How to Add a Problem
-Create a new YAML file under `data/problems/` (e.g. `data/problems/coin_change.yaml`):
-```yaml
-id: coin_change
-title: Coin Change
-language: python
-entrypoint: solve
-tests:
-  - id: "1"
-    input: "{\"coins\": [1, 2, 5], \"amount\": 11}"
-    expected_output: "3"
-accepted_strategies:
-  - dp_unbounded_knapsack
-required_concepts:
-  - dynamic_programming
-optional_concepts:
-  - memoization
-  - tabulation
-primary_concepts:
-  - dynamic_programming
+Add problem records to `data/problems/dataset_all.json` (or any `.json` file under `data/problems/`) conforming to [`data/schemas/problem.schema.json`](data/schemas/problem.schema.json):
+```json
+{
+  "id": "coin_change",
+  "title": "Coin Change",
+  "difficulty": "Medium",
+  "topic_tags": ["dynamic-programming", "array"],
+  "language": "python",
+  "entrypoint": "solve",
+  "entrypoint_aliases": ["solve", "coinChange"],
+  "tests": [
+    {
+      "id": "1",
+      "name": "Standard example 1",
+      "input": "{\"coins\": [1, 2, 5], \"amount\": 11}",
+      "expected_output": "3",
+      "description": "Returns minimum coins needed"
+    }
+  ],
+  "accepted_strategies": ["dp_unbounded_knapsack"],
+  "required_concepts": ["dynamic_programming"],
+  "optional_concepts": ["memoization", "tabulation"],
+  "primary_concepts": ["dynamic_programming"],
+  "time_limit_ms": 2000,
+  "memory_limit_mb": 256
+}
 ```
 
 ### How to Add a Strategy / Concept Detector

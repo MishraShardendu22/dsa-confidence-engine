@@ -42,6 +42,7 @@ test-coverage: templ ## Run tests and generate HTML coverage report
 clean: ## Remove build artifacts and temporary databases
 	rm -f $(BINARY_NAME) coverage.out coverage.html
 	rm -f *.db *.db-journal data/*.db data/*.db-journal
+	rm -rf scripts/__pycache__ **/__pycache__ *.pyc
 	@echo "Clean complete."
 
 help: ## Display available Makefile targets
