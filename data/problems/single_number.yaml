@@ -1,0 +1,35 @@
+id: single_number
+title: Single Number
+description: "Given a non-empty array of integers nums, every element appears twice except for one. Find that single one. You must implement a solution with a linear runtime complexity and use only constant extra space."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - singleNumber
+  - single_number
+starter_code: |
+  def solve(nums):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"nums\": [2, 2, 1]}"
+    expected_output: "1"
+  - id: "2"
+    input: "{\"nums\": [4, 1, 2, 1, 2]}"
+    expected_output: "4"
+  - id: "3"
+    input: "{\"nums\": [1]}"
+    expected_output: "1"
+  - id: "4"
+    input: "{\"nums\": [0, 1, 0]}"
+    expected_output: "1"
+  - id: "5"
+    input: "{\"nums\": [3, 3, 5, 5, 7]}"
+    expected_output: "7"
+accepted_strategies:
+  - xor_single_number
+required_concepts:
+  - bit_manipulation
+optional_concepts: []
+primary_concepts:
+  - bit_manipulation

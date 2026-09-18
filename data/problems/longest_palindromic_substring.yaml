@@ -1,0 +1,40 @@
+id: longest_palindromic_substring
+title: Longest Palindromic Substring
+description: "Given a string s, return the longest palindromic substring in s."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - longestPalindrome
+  - longest_palindrome
+starter_code: |
+  def solve(s):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"s\": \"babad\"}"
+    expected_output: "bab"
+  - id: "2"
+    input: "{\"s\": \"cbbd\"}"
+    expected_output: "bb"
+  - id: "3"
+    input: "{\"s\": \"a\"}"
+    expected_output: "a"
+  - id: "4"
+    input: "{\"s\": \"ac\"}"
+    expected_output: "a"
+  - id: "5"
+    input: "{\"s\": \"racecar\"}"
+    expected_output: "racecar"
+accepted_strategies:
+  - expand_around_center
+  - dp_palindrome_2d
+  - manacher_algorithm
+required_concepts: []
+optional_concepts:
+  - dynamic_programming
+  - dp_string
+  - two_pointers
+primary_concepts:
+  - dynamic_programming
+  - two_pointers

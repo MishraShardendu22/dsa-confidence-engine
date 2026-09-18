@@ -1,0 +1,36 @@
+id: find_first_and_last_position
+title: Find First and Last Position of Element in Sorted Array
+description: "Given an array of integers nums sorted in non-decreasing order, find the starting and ending position of a given target value. If target is not found in the array, return [-1, -1]. You must write an algorithm with O(log n) runtime complexity."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - searchRange
+  - search_range
+starter_code: |
+  def solve(nums, target):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"nums\": [5, 7, 7, 8, 8, 10], \"target\": 8}"
+    expected_output: "[3, 4]"
+  - id: "2"
+    input: "{\"nums\": [5, 7, 7, 8, 8, 10], \"target\": 6}"
+    expected_output: "[-1, -1]"
+  - id: "3"
+    input: "{\"nums\": [], \"target\": 0}"
+    expected_output: "[-1, -1]"
+  - id: "4"
+    input: "{\"nums\": [1], \"target\": 1}"
+    expected_output: "[0, 0]"
+  - id: "5"
+    input: "{\"nums\": [1, 1, 1, 1], \"target\": 1}"
+    expected_output: "[0, 3]"
+accepted_strategies:
+  - binary_search_lower_upper_bound
+  - binary_search_leftmost_rightmost
+required_concepts:
+  - binary_search
+optional_concepts: []
+primary_concepts:
+  - binary_search

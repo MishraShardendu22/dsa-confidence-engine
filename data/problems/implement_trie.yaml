@@ -1,0 +1,33 @@
+id: implement_trie
+title: Implement Trie (Prefix Tree)
+description: "A trie (pronounced as 'try') or prefix tree is a tree data structure used to efficiently store and retrieve keys in a dataset of strings. There are various applications of this data structure, such as autocomplete and spellchecker. Implement the Trie class with insert, search, and startsWith methods. Given a list of operations and their arguments, return a list of results (null for insert)."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - trie_operations
+  - run_trie
+starter_code: |
+  def solve(operations, args):
+      # operations: list of strings (e.g. ["insert", "search", "startsWith"])
+      # args: list of strings (e.g. ["apple", "apple", "app"])
+      # return list of results (None for insert, bool for search/startsWith)
+      pass
+tests:
+  - id: "1"
+    input: "{\"operations\": [\"insert\", \"search\", \"search\", \"startsWith\", \"insert\", \"search\"], \"args\": [\"apple\", \"apple\", \"app\", \"app\", \"app\", \"app\"]}"
+    expected_output: "[null, true, false, true, null, true]"
+  - id: "2"
+    input: "{\"operations\": [\"insert\", \"search\", \"startsWith\"], \"args\": [\"hello\", \"hell\", \"hell\"]}"
+    expected_output: "[null, false, true]"
+  - id: "3"
+    input: "{\"operations\": [\"insert\", \"insert\", \"search\", \"search\"], \"args\": [\"a\", \"ab\", \"ab\", \"abc\"]}"
+    expected_output: "[null, null, true, false]"
+accepted_strategies:
+  - trie_array_children
+  - trie_hashmap_children
+required_concepts:
+  - trie
+optional_concepts:
+  - hashmap
+primary_concepts:
+  - trie

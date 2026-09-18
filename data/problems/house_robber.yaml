@@ -1,0 +1,40 @@
+id: house_robber
+title: House Robber
+description: "You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security systems connected and it will automatically contact the police if two adjacent houses were broken into on the same night. Given an integer array nums representing the amount of money of each house, return the maximum amount of money you can rob tonight without alerting the police."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - rob
+  - house_robber
+starter_code: |
+  def solve(nums):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"nums\": [1, 2, 3, 1]}"
+    expected_output: "4"
+  - id: "2"
+    input: "{\"nums\": [2, 7, 9, 3, 1]}"
+    expected_output: "12"
+  - id: "3"
+    input: "{\"nums\": [1]}"
+    expected_output: "1"
+  - id: "4"
+    input: "{\"nums\": [2, 1]}"
+    expected_output: "2"
+  - id: "5"
+    input: "{\"nums\": [0, 0, 0, 0]}"
+    expected_output: "0"
+accepted_strategies:
+  - dp_1d_house_robber
+  - dp_memoization_house_robber
+required_concepts:
+  - dynamic_programming
+optional_concepts:
+  - dp_1d
+  - tabulation
+  - memoization
+primary_concepts:
+  - dynamic_programming
+  - dp_1d

@@ -1,0 +1,31 @@
+id: permutations
+title: Permutations
+description: "Given an array nums of distinct integers, return all the possible permutations. You can return the answer in any order. Sort each permutation and sort the list of permutations."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - permute
+  - permutations
+starter_code: |
+  def solve(nums):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"nums\": [1, 2, 3]}"
+    expected_output: "[[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]"
+  - id: "2"
+    input: "{\"nums\": [0, 1]}"
+    expected_output: "[[0, 1], [1, 0]]"
+  - id: "3"
+    input: "{\"nums\": [1]}"
+    expected_output: "[[1]]"
+accepted_strategies:
+  - backtracking_permutations
+  - itertools_permutations
+required_concepts: []
+optional_concepts:
+  - backtracking
+  - recursion
+primary_concepts:
+  - backtracking

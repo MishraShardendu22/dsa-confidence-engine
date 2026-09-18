@@ -1,0 +1,41 @@
+id: longest_increasing_subsequence
+title: Longest Increasing Subsequence
+description: "Given an integer array nums, return the length of the longest strictly increasing subsequence."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - lengthOfLIS
+  - length_of_lis
+  - lis
+starter_code: |
+  def solve(nums):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"nums\": [10, 9, 2, 5, 3, 7, 101, 18]}"
+    expected_output: "4"
+  - id: "2"
+    input: "{\"nums\": [0, 1, 0, 3, 2, 3]}"
+    expected_output: "4"
+  - id: "3"
+    input: "{\"nums\": [7, 7, 7, 7, 7, 7, 7]}"
+    expected_output: "1"
+  - id: "4"
+    input: "{\"nums\": [1]}"
+    expected_output: "1"
+  - id: "5"
+    input: "{\"nums\": [3, 10, 2, 1, 20]}"
+    expected_output: "3"
+accepted_strategies:
+  - dp_lis_n_squared
+  - binary_search_patience_sorting
+required_concepts:
+  - dynamic_programming
+optional_concepts:
+  - dp_lis
+  - binary_search
+  - tabulation
+primary_concepts:
+  - dynamic_programming
+  - dp_lis

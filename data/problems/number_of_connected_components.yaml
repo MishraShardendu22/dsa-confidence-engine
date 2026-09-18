@@ -1,0 +1,40 @@
+id: number_of_connected_components
+title: Number of Connected Components in an Undirected Graph
+description: "You have a graph of n nodes. You are given an integer n and an array edges where edges[i] = [ai, bi] indicates that there is an edge between ai and bi in the graph. Return the number of connected components in the graph."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - countComponents
+  - count_components
+starter_code: |
+  def solve(n, edges):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"n\": 5, \"edges\": [[0, 1], [1, 2], [3, 4]]}"
+    expected_output: "2"
+  - id: "2"
+    input: "{\"n\": 5, \"edges\": [[0, 1], [1, 2], [2, 3], [3, 4]]}"
+    expected_output: "1"
+  - id: "3"
+    input: "{\"n\": 3, \"edges\": []}"
+    expected_output: "3"
+  - id: "4"
+    input: "{\"n\": 1, \"edges\": []}"
+    expected_output: "1"
+  - id: "5"
+    input: "{\"n\": 4, \"edges\": [[0, 1], [2, 3]]}"
+    expected_output: "2"
+accepted_strategies:
+  - union_find_components
+  - dfs_components
+  - bfs_components
+required_concepts: []
+optional_concepts:
+  - union_find
+  - dfs
+  - bfs
+primary_concepts:
+  - union_find
+  - dfs

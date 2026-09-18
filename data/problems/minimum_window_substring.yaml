@@ -1,0 +1,38 @@
+id: minimum_window_substring
+title: Minimum Window Substring
+description: "Given two strings s and t of lengths m and n respectively, return the minimum window substring of s such that every character in t (including duplicates) is included in the window. If there is no such substring, return the empty string ''."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - minWindow
+  - min_window
+starter_code: |
+  def solve(s, t):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"s\": \"ADOBECODEBANC\", \"t\": \"ABC\"}"
+    expected_output: "BANC"
+  - id: "2"
+    input: "{\"s\": \"a\", \"t\": \"a\"}"
+    expected_output: "a"
+  - id: "3"
+    input: "{\"s\": \"a\", \"t\": \"aa\"}"
+    expected_output: ""
+  - id: "4"
+    input: "{\"s\": \"aa\", \"t\": \"aa\"}"
+    expected_output: "aa"
+  - id: "5"
+    input: "{\"s\": \"cabwefgewcwaefgcf\", \"t\": \"cae\"}"
+    expected_output: "cwae"
+accepted_strategies:
+  - sliding_window_frequency_map
+required_concepts:
+  - sliding_window
+optional_concepts:
+  - hashmap
+  - frequency_count
+primary_concepts:
+  - sliding_window
+  - frequency_count

@@ -1,0 +1,35 @@
+id: find_all_anagrams
+title: Find All Anagrams in a String
+description: "Given two strings s and p, return an array of all the start indices of p's anagrams in s. You may return the answer in any order. Return sorted indices."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - findAnagrams
+  - find_anagrams
+starter_code: |
+  def solve(s, p):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"s\": \"cbaebabacd\", \"p\": \"abc\"}"
+    expected_output: "[0, 6]"
+  - id: "2"
+    input: "{\"s\": \"abab\", \"p\": \"ab\"}"
+    expected_output: "[0, 1, 2]"
+  - id: "3"
+    input: "{\"s\": \"baa\", \"p\": \"aa\"}"
+    expected_output: "[1]"
+  - id: "4"
+    input: "{\"s\": \"aa\", \"p\": \"bb\"}"
+    expected_output: "[]"
+accepted_strategies:
+  - sliding_window_frequency_count_anagram
+required_concepts:
+  - sliding_window
+optional_concepts:
+  - frequency_count
+  - hashmap
+primary_concepts:
+  - sliding_window
+  - frequency_count

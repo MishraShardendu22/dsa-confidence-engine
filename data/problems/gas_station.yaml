@@ -1,0 +1,33 @@
+id: gas_station
+title: Gas Station
+description: "There are n gas stations along a circular route, where the amount of gas at the ith station is gas[i]. You have a car with an unlimited gas tank and it costs cost[i] of gas to travel from the ith station to its next (i+1)th station. You begin the journey with an empty tank at one of the gas stations. Given two integer arrays gas and cost, return the starting gas station's index if you can travel around the circuit once in the clockwise direction, otherwise return -1. If there exists a solution, it is guaranteed to be unique."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - canCompleteCircuit
+  - can_complete_circuit
+starter_code: |
+  def solve(gas, cost):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"gas\": [1, 2, 3, 4, 5], \"cost\": [3, 4, 5, 1, 2]}"
+    expected_output: "3"
+  - id: "2"
+    input: "{\"gas\": [2, 3, 4], \"cost\": [3, 4, 3]}"
+    expected_output: "-1"
+  - id: "3"
+    input: "{\"gas\": [5, 8, 2, 8], \"cost\": [6, 5, 6, 6]}"
+    expected_output: "3"
+  - id: "4"
+    input: "{\"gas\": [1, 2], \"cost\": [2, 1]}"
+    expected_output: "1"
+accepted_strategies:
+  - greedy_gas_station
+required_concepts: []
+optional_concepts:
+  - greedy
+  - arrays
+primary_concepts:
+  - greedy

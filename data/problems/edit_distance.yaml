@@ -1,0 +1,41 @@
+id: edit_distance
+title: Edit Distance
+description: "Given two strings word1 and word2, return the minimum number of operations required to convert word1 to word2. You have the following three operations permitted on a word: Insert a character, Delete a character, Replace a character."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - minDistance
+  - min_distance
+  - edit_distance
+starter_code: |
+  def solve(word1, word2):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"word1\": \"horse\", \"word2\": \"ros\"}"
+    expected_output: "3"
+  - id: "2"
+    input: "{\"word1\": \"intention\", \"word2\": \"execution\"}"
+    expected_output: "5"
+  - id: "3"
+    input: "{\"word1\": \"\", \"word2\": \"a\"}"
+    expected_output: "1"
+  - id: "4"
+    input: "{\"word1\": \"a\", \"word2\": \"\"}"
+    expected_output: "1"
+  - id: "5"
+    input: "{\"word1\": \"abc\", \"word2\": \"abc\"}"
+    expected_output: "0"
+accepted_strategies:
+  - dp_edit_distance_2d
+  - dp_edit_distance_memoization
+required_concepts:
+  - dynamic_programming
+optional_concepts:
+  - dp_string
+  - dp_string_edit_distance
+  - tabulation
+primary_concepts:
+  - dynamic_programming
+  - dp_string_edit_distance

@@ -1,0 +1,32 @@
+id: reverse_bits
+title: Reverse Bits
+description: "Reverse bits of a given 32 bits unsigned integer. Return the result as an unsigned 32-bit integer."
+language: python
+entrypoint: solve
+entrypoint_aliases:
+  - reverseBits
+  - reverse_bits
+starter_code: |
+  def solve(n):
+      # Write your solution here
+      pass
+tests:
+  - id: "1"
+    input: "{\"n\": 43261596}"
+    expected_output: "964176192"
+  - id: "2"
+    input: "{\"n\": 4294967293}"
+    expected_output: "3221225471"
+  - id: "3"
+    input: "{\"n\": 0}"
+    expected_output: "0"
+  - id: "4"
+    input: "{\"n\": 1}"
+    expected_output: "2147483648"
+accepted_strategies:
+  - bit_shift_reverse
+required_concepts:
+  - bit_manipulation
+optional_concepts: []
+primary_concepts:
+  - bit_manipulation
