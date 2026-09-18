@@ -34,6 +34,89 @@
   aliases:
     - max reachable index
     - jump game greedy
+    - farthest reachable
+    - extend reach horizon
   keywords:
     - jump
     - reachable
+    - farthest
+
+- id: gas_station_greedy
+  name: Gas Station (Circuit Deficit Reset Greedy)
+  parent: greedy
+  description: Single-pass algorithm tracking current and total surplus gas, resetting starting index upon deficit.
+  aliases:
+    - gas station
+    - gas station greedy
+    - circuit greedy
+    - reset starting station
+    - tank deficit reset
+  keywords:
+    - gas station
+    - tank
+    - surplus
+    - deficit
+    - circuit
+  code_signals:
+    - deficit_reset_start_index
+  explanation_examples:
+    - "use greedy approach tracking current tank and resetting start station"
+
+- id: candy_two_pass_greedy
+  name: Two-Pass Neighbor Propagation Greedy (Candy Problem)
+  parent: greedy
+  description: Satisfying relative neighbor constraints by making a left-to-right pass followed by a right-to-left pass.
+  aliases:
+    - candy greedy
+    - two pass neighbor greedy
+    - ratings neighbor pass
+  keywords:
+    - candy
+    - ratings
+    - left to right pass
+    - right to left pass
+  code_signals:
+    - two_pass_neighbor_loops
+
+- id: fractional_knapsack
+  name: Fractional Knapsack
+  parent: greedy
+  description: Selecting items sorted by value-to-weight ratio to maximize total value when fractions of items are allowed.
+  aliases:
+    - fractional knapsack
+    - value to weight ratio
+    - continuous knapsack
+  keywords:
+    - fractional
+    - value per weight
+    - ratio
+
+- id: reorganize_string_greedy
+  name: Reorganize String Greedy (Frequency Interleaving)
+  parent: greedy
+  description: Placing most frequent characters alternately using a max-heap priority queue to prevent adjacent duplicate characters.
+  aliases:
+    - reorganize string
+    - alternate frequent characters
+    - max heap frequency greedy
+  keywords:
+    - reorganize
+    - alternate
+    - non adjacent
+    - most frequent
+  code_signals:
+    - max_heap_interleave
+
+- id: activity_selection
+  name: Activity Selection / Task Scheduling
+  parent: greedy
+  description: Choosing maximum non-overlapping activities by sorting by earliest finish time.
+  aliases:
+    - activity selection
+    - task scheduling greedy
+    - earliest finish time
+  keywords:
+    - activity selection
+    - finish time
+    - compatible activities
+

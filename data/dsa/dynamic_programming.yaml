@@ -271,3 +271,92 @@
   keywords:
     - optimization
     - cht
+
+- id: space_optimization
+  name: Space-Optimized Dynamic Programming
+  parent: dynamic_programming
+  description: Maintaining only previous state variables or rolling rows to reduce space complexity from O(N) or O(N^2) to O(1) or O(N).
+  aliases:
+    - space optimization
+    - space optimized dp
+    - rolling variables
+    - rolling array
+    - constant space dp
+    - two variables dp
+    - prev and curr states
+  keywords:
+    - space optimization
+    - rolling
+    - prev curr
+    - constant space
+  code_signals:
+    - rolling_variables
+    - prev_curr_swap
+  explanation_examples:
+    - "optimize space by only keeping the last two variables"
+    - "use a rolling array to reduce space complexity to O(1)"
+
+- id: knapsack_01
+  name: 0/1 Knapsack Problem
+  parent: dynamic_programming
+  description: Choosing items with weights and values to maximize total value without exceeding capacity, taking each item at most once.
+  aliases:
+    - 0/1 knapsack
+    - 0-1 knapsack
+    - zero one knapsack
+    - subset sum dp
+  keywords:
+    - knapsack
+    - capacity
+    - weight
+    - value
+  code_signals:
+    - reverse_inner_loop_dp
+
+- id: unbounded_knapsack
+  name: Unbounded Knapsack Problem
+  parent: dynamic_programming
+  description: Maximizing total value with unlimited copies of each item available.
+  aliases:
+    - unbounded knapsack
+    - complete knapsack
+    - coin change dp
+  keywords:
+    - unbounded
+    - infinite items
+    - coin change
+  code_signals:
+    - forward_inner_loop_dp
+
+- id: matrix_chain_multiplication
+  name: Matrix Chain Multiplication (Interval DP)
+  parent: dynamic_programming
+  description: Dynamic programming on subsegments [i, j] choosing an optimal split point k to minimize cost.
+  aliases:
+    - matrix chain multiplication
+    - interval dp
+    - mcm
+    - optimal split point
+  keywords:
+    - interval
+    - split
+    - subsegment
+    - matrix chain
+  code_signals:
+    - interval_len_loops
+
+- id: longest_palindromic_subsequence
+  name: Longest Palindromic Subsequence
+  parent: dynamic_programming
+  description: 2D dynamic programming computing the longest palindromic subsequence using left and right boundary matching.
+  aliases:
+    - longest palindromic subsequence
+    - lps
+    - palindrome subsequence dp
+  keywords:
+    - palindrome
+    - subsequence
+    - lps
+  code_signals:
+    - 2d_lps_table
+

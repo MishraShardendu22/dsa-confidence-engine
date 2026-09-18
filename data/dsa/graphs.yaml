@@ -64,11 +64,24 @@
     - topo sort
     - kahn algorithm
     - indegree bfs
+    - dependency ordering
+    - course schedule ordering
+    - prerequisite ordering
+    - zero indegree queue
+    - peeling leaves
   keywords:
     - topological
     - indegree
+    - in-degree
     - dag
     - dependencies
+    - prerequisites
+  code_signals:
+    - in_degree_array
+    - kahn_queue_bfs
+  explanation_examples:
+    - "use topological sort with Kahn's algorithm to order dependencies"
+    - "peel off nodes with zero in-degree using a queue"
 
 - id: union_find
   name: Union Find / Disjoint Set Union (DSU)
@@ -79,14 +92,18 @@
     - dsu
     - disjoint set
     - disjoint set union
+    - path compression
+    - union by rank
   keywords:
     - union
     - find
     - parent
     - rank
+    - connected components
   code_signals:
     - find_parent
     - union_by_rank
+    - path_compression
 
 - id: dijkstra
   name: Dijkstra's Algorithm
@@ -96,7 +113,254 @@
     - dijkstra
     - dijkstra algorithm
     - shortest path heap
+    - priority queue shortest path
+    - min heap relaxation
   keywords:
     - dijkstra
     - shortest path
     - weight
+    - relaxation
+    - distance
+  code_signals:
+    - dijkstra_heap
+    - priority_queue_relaxation
+
+- id: bellman_ford
+  name: Bellman-Ford Algorithm
+  parent: graphs
+  description: Computes shortest paths from a single source vertex on weighted graphs and detects negative weight cycles.
+  aliases:
+    - bellman ford
+    - bellman-ford
+    - negative cycle detection
+    - edge relaxation n times
+  keywords:
+    - bellman
+    - ford
+    - negative weight
+    - cycle detection
+    - relaxation
+  code_signals:
+    - edge_relaxation_loop
+  explanation_examples:
+    - "use Bellman-Ford to find the shortest path with negative edges"
+    - "relax all edges V - 1 times to detect negative cycles"
+
+- id: floyd_warshall
+  name: Floyd-Warshall Algorithm
+  parent: graphs
+  description: Dynamic programming algorithm for finding all-pairs shortest paths on weighted graphs.
+  aliases:
+    - floyd warshall
+    - floyd-warshall
+    - all pairs shortest path
+    - apsp
+    - transitive closure
+  keywords:
+    - floyd
+    - warshall
+    - intermediate node
+    - all-pairs
+    - matrix dp
+  code_signals:
+    - triple_nested_loop_dp
+  explanation_examples:
+    - "use Floyd-Warshall to compute all-pairs shortest paths using a 2D distance matrix"
+
+- id: kruskal_algorithm
+  name: Kruskal's Minimum Spanning Tree Algorithm
+  parent: graphs
+  description: Greedy algorithm that finds a minimum spanning tree by sorting edges and adding non-cyclical edges via Disjoint Set Union.
+  aliases:
+    - kruskal
+    - kruskal algorithm
+    - kruskal mst
+    - minimum spanning tree dsu
+  keywords:
+    - kruskal
+    - mst
+    - spanning tree
+    - sort edges
+    - union find
+  code_signals:
+    - sort_edges_by_weight
+    - union_find_mst
+
+- id: prim_algorithm
+  name: Prim's Minimum Spanning Tree Algorithm
+  parent: graphs
+  description: Greedy algorithm that builds a minimum spanning tree from an arbitrary starting vertex by expanding the cut with minimum-weight edges.
+  aliases:
+    - prim
+    - prim algorithm
+    - prim mst
+    - minimum spanning tree heap
+  keywords:
+    - prim
+    - mst
+    - cut
+    - priority queue
+  code_signals:
+    - prim_min_heap
+    - visited_set_mst
+
+- id: tarjan_scc
+  name: Tarjan's Strongly Connected Components Algorithm
+  parent: graphs
+  description: Linear-time DFS algorithm using low-link values and a call stack to decompose directed graphs into strongly connected components.
+  aliases:
+    - tarjan
+    - tarjan scc
+    - strongly connected components
+    - lowlink
+    - dfs low link
+  keywords:
+    - tarjan
+    - scc
+    - lowlink
+    - discovery time
+    - strongly connected
+
+- id: kosaraju_scc
+  name: Kosaraju's Strongly Connected Components Algorithm
+  parent: graphs
+  description: Two-pass DFS algorithm that finds strongly connected components using graph transposition and finishing times.
+  aliases:
+    - kosaraju
+    - kosaraju algorithm
+    - transpose graph dfs
+    - two pass scc
+  keywords:
+    - kosaraju
+    - transpose
+    - reverse edges
+    - finish time stack
+
+- id: bipartite_graph_coloring
+  name: Bipartite Graph Coloring
+  parent: graphs
+  description: Algorithm checking whether a graph can be colored with two colors such that no adjacent vertices share the same color.
+  aliases:
+    - bipartite
+    - bipartite graph
+    - 2-coloring
+    - two coloring
+    - check bipartite
+  keywords:
+    - bipartite
+    - coloring
+    - odd cycle
+    - 2-color
+  code_signals:
+    - color_array_check
+
+- id: eulerian_path
+  name: Eulerian Path and Circuit (Hierholzer)
+  parent: graphs
+  description: Hierholzer's algorithm to find a trail in a finite graph that visits every edge exactly once.
+  aliases:
+    - eulerian path
+    - eulerian circuit
+    - hierholzer
+    - hierholzer algorithm
+    - euler tour
+  keywords:
+    - eulerian
+    - hierholzer
+    - in-degree out-degree balance
+    - visit every edge
+
+- id: hamiltonian_path
+  name: Hamiltonian Path and Cycle
+  parent: graphs
+  description: Path in an undirected or directed graph that visits each vertex exactly once.
+  aliases:
+    - hamiltonian path
+    - hamiltonian cycle
+    - traveling salesperson
+    - tsp bitmask
+  keywords:
+    - hamiltonian
+    - visit each vertex
+    - bitmask graph
+
+- id: dinic_algorithm
+  name: Dinic's Maximum Network Flow Algorithm
+  parent: graphs
+  description: Maximum flow algorithm using level graphs constructed via BFS and blocking flows pushed via DFS.
+  aliases:
+    - dinic
+    - dinic algorithm
+    - max flow
+    - network flow
+    - blocking flow
+    - level graph
+  keywords:
+    - dinic
+    - max flow
+    - residual graph
+    - augmenting path
+    - capacity
+
+- id: edmonds_karp
+  name: Edmonds-Karp Max Flow Algorithm
+  parent: graphs
+  description: Implementation of Ford-Fulkerson using BFS to find shortest augmenting paths in residual networks.
+  aliases:
+    - edmonds karp
+    - edmonds-karp
+    - ford fulkerson bfs
+    - augmenting path bfs
+  keywords:
+    - edmonds
+    - karp
+    - residual capacity
+    - bottleneck
+
+- id: zero_one_bfs
+  name: 0-1 BFS
+  parent: graphs
+  description: Shortest path algorithm on graphs where edge weights are either 0 or 1, running in O(V + E) using a deque.
+  aliases:
+    - 0-1 bfs
+    - 0 1 bfs
+    - zero one bfs
+    - deque shortest path
+  keywords:
+    - deque
+    - appendleft
+    - binary weights
+    - 0-1
+
+- id: bidirectional_bfs
+  name: Bidirectional BFS
+  parent: graphs
+  description: Search algorithm running two simultaneous breadth-first searches from source and target until frontiers intersect.
+  aliases:
+    - bidirectional bfs
+    - bidirectional search
+    - meet in the middle bfs
+    - two ended bfs
+  keywords:
+    - bidirectional
+    - two queues
+    - meeting point
+    - frontier intersection
+
+- id: bridge_finding
+  name: Bridges and Articulation Points (Cut Vertices)
+  parent: graphs
+  description: Tarjan's low-link algorithm to find critical connections (bridges) whose removal disconnects the graph.
+  aliases:
+    - bridge finding
+    - bridges
+    - articulation points
+    - cut vertices
+    - critical connections
+  keywords:
+    - bridge
+    - articulation
+    - cut vertex
+    - critical connection
+    - lowlink
+

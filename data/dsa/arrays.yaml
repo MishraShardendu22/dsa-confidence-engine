@@ -98,3 +98,136 @@
     - "simulate the process step by step"
     - "track the state in an iterative simulation"
 
+- id: dutch_national_flag
+  name: Dutch National Flag (3-Way Partitioning)
+  parent: arrays
+  description: Partitioning an array into three groups around pivots using low, mid, and high pointers in linear time.
+  aliases:
+    - dutch national flag
+    - three way partitioning
+    - sort colors
+    - 3 way partition
+  keywords:
+    - dutch national flag
+    - partition
+    - three pointers
+    - low mid high
+  code_signals:
+    - three_pointer_partition
+
+- id: majority_element_moore_voting
+  name: Boyer-Moore Majority Voting Algorithm
+  parent: arrays
+  description: Linear time and constant space algorithm to find the majority element appearing more than n/2 times.
+  aliases:
+    - boyer moore
+    - boyer-moore
+    - majority element
+    - moore voting
+    - voting algorithm
+  keywords:
+    - majority
+    - candidate
+    - vote
+    - boyer moore
+  code_signals:
+    - candidate_count_voting
+
+- id: two_pass_sweep
+  name: Two-Pass Array Sweep
+  parent: arrays
+  description: Linear time scanning pass forward followed by a pass backward to accumulate prefix and suffix contexts.
+  aliases:
+    - two pass
+    - two-pass
+    - forward and backward pass
+    - left and right pass
+    - prefix suffix sweep
+  keywords:
+    - two pass
+    - forward backward
+    - prefix suffix
+  code_signals:
+    - forward_backward_loops
+
+- id: kadane_max_product
+  name: Maximum Product Subarray (Kadane Variation)
+  parent: arrays
+  description: Tracking both maximum and minimum running products to handle negative numbers in dynamic subarray products.
+  aliases:
+    - max product subarray
+    - maximum product subarray
+    - running max min product
+  keywords:
+    - product
+    - max product
+    - min product
+    - sign flip
+  code_signals:
+    - swap_max_min_on_negative
+
+- id: circular_array_indexing
+  name: Circular Array Indexing
+  parent: arrays
+  description: Traversal of circular or cyclic buffers using modulo arithmetic (i % n).
+  aliases:
+    - circular array
+    - circular buffer
+    - cyclic array
+    - modulo indexing
+  keywords:
+    - circular
+    - modulo
+    - cyclic
+    - wrap around
+  code_signals:
+    - modulo_index_loop
+
+- id: coordinate_compression
+  name: Coordinate Compression
+  parent: arrays
+  description: Mapping large or sparse coordinates into a compact range [0, k-1] preserving relative order.
+  aliases:
+    - coordinate compression
+    - discretize coordinates
+    - rank compression
+  keywords:
+    - compression
+    - discretize
+    - sorted unique rank
+  code_signals:
+    - unique_sort_bisect
+
+- id: next_permutation
+  name: Next Permutation
+  parent: arrays
+  description: Generating the lexicographically next greater permutation in-place by finding the rightmost pivot and reversing the suffix.
+  aliases:
+    - next permutation
+    - lexicographically next
+    - pivot suffix reverse
+  keywords:
+    - permutation
+    - lexicographical
+    - pivot
+    - reverse suffix
+  code_signals:
+    - pivot_swap_reverse
+
+- id: rotate_array_in_place
+  name: Rotate Array In-Place (Reversal Algorithm)
+  parent: arrays
+  description: Cyclically shifting an array by k steps using three in-place reversals in O(1) space.
+  aliases:
+    - rotate array
+    - array rotation
+    - three reversals
+    - cyclic shift
+  keywords:
+    - rotate
+    - shift
+    - reverse three times
+  code_signals:
+    - reverse_subarray_helper
+
+

@@ -30,3 +30,52 @@
   keywords:
     - monotonic
     - deque
+
+- id: next_greater_element
+  name: Next Greater Element (Monotonic Stack Boundary)
+  parent: mono_stack
+  description: Resolving nearest boundary values or next greater/smaller elements using monotonic stack index tracking.
+  aliases:
+    - next greater element
+    - next greater
+    - next smaller element
+    - daily temperatures stack
+  keywords:
+    - next greater
+    - next smaller
+    - nearest boundary
+    - span
+  code_signals:
+    - monotonic_stack_boundary
+
+- id: largest_rectangle_histogram
+  name: Largest Rectangle in Histogram
+  parent: mono_stack
+  description: Monotonic increasing stack calculating rectangular area by popping smaller heights and computing width bounds.
+  aliases:
+    - largest rectangle in histogram
+    - histogram area
+    - max rectangle histogram
+  keywords:
+    - histogram
+    - largest rectangle
+    - height pop
+    - width bound
+  code_signals:
+    - histogram_height_pop_area
+
+- id: sliding_window_maximum_deque
+  name: Sliding Window Maximum (Monotonic Deque)
+  parent: mono_queue
+  description: Maintaining elements in decreasing order in a deque to find the maximum of each sliding window in O(N).
+  aliases:
+    - sliding window maximum
+    - sliding window max
+    - deque max window
+  keywords:
+    - sliding window max
+    - monotonic deque
+    - popleft boundary
+  code_signals:
+    - deque_pop_smaller_front
+

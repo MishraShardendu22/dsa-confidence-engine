@@ -38,9 +38,84 @@
   description: Placing elements on a grid satisfying complex mutual constraints with pruning.
   aliases:
     - n queens
-    - sudoku solver
+    - n-queens
     - constraint satisfaction
   keywords:
     - queens
     - board
     - constraint
+
+- id: word_search_backtracking
+  name: Grid Word Search Backtracking
+  parent: backtracking
+  description: Exploring 2D matrix paths for character sequences, marking cells visited temporarily and restoring state on backtrack.
+  aliases:
+    - word search
+    - word search backtracking
+    - grid backtracking
+    - board dfs
+  keywords:
+    - word search
+    - board
+    - restore cell
+    - 2d grid
+  code_signals:
+    - grid_cell_temp_mark_restore
+
+- id: sudoku_solver
+  name: Sudoku Solver (Exact Cover / Pruning)
+  parent: backtracking
+  description: Constraint satisfaction puzzle solver tracking row, column, and 3x3 block digit constraints.
+  aliases:
+    - sudoku solver
+    - solve sudoku
+    - 9x9 grid solver
+  keywords:
+    - sudoku
+    - valid board
+    - box constraint
+
+- id: palindrome_partitioning
+  name: Palindrome Partitioning
+  parent: backtracking
+  description: Partitioning a string such that every substring of the partition is a palindrome via recursive prefix expansion.
+  aliases:
+    - palindrome partitioning
+    - partition palindromes
+  keywords:
+    - palindrome
+    - partition
+    - prefix substring
+
+- id: combination_sum_backtracking
+  name: Combination Sum (Target Accumulation)
+  parent: backtracking
+  description: Finding combinations of candidates that sum to a target value using sorted pruning and element re-use.
+  aliases:
+    - combination sum
+    - combination sum ii
+    - target sum backtracking
+  keywords:
+    - combination sum
+    - target
+    - remain
+    - candidates
+  code_signals:
+    - combination_sum_path_pop
+
+- id: subsets_power_set
+  name: Subsets / Power Set Generation
+  parent: backtracking
+  description: Generating all subsets (the power set) of a collection using recursive choice trees or cascading iteration.
+  aliases:
+    - subsets
+    - power set
+    - generate power set
+    - all subsets
+  keywords:
+    - subsets
+    - power set
+    - include exclude
+  code_signals:
+    - subset_backtrack_loop
+

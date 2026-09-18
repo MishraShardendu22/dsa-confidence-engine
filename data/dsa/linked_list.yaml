@@ -38,3 +38,92 @@
   keywords:
     - dummy
     - sentinel
+
+- id: fast_slow_tortoise_hare
+  name: Fast and Slow Pointers (Tortoise and Hare)
+  parent: linked_list
+  description: Using two pointers advancing at different speeds (1 step and 2 steps) to find midpoints or detect cycles.
+  aliases:
+    - tortoise and hare
+    - fast and slow pointers linked list
+    - find middle linked list
+    - slow fast pointers
+  keywords:
+    - tortoise hare
+    - slow fast
+    - middle node
+  code_signals:
+    - slow_fast_next_next
+
+- id: detect_cycle_floyd
+  name: Floyd's Cycle Detection (Linked List Cycle II)
+  parent: linked_list
+  description: Detecting cycle and finding the entry cycle node by meeting fast and slow pointers, then advancing from head.
+  aliases:
+    - floyd cycle detection
+    - cycle entry node
+    - linked list cycle ii
+  keywords:
+    - cycle detection
+    - cycle start
+    - floyd
+  code_signals:
+    - cycle_meeting_reset_head
+
+- id: merge_k_sorted_lists
+  name: Merge K Sorted Lists
+  parent: linked_list
+  description: Merging K sorted linked lists into one sorted list using a min-heap or divide-and-conquer in O(N log K).
+  aliases:
+    - merge k sorted lists
+    - merge k lists
+    - k way merge lists
+  keywords:
+    - merge k lists
+    - min heap lists
+    - divide conquer lists
+  code_signals:
+    - min_heap_merge_lists
+
+- id: intersection_two_linked_lists
+  name: Intersection of Two Linked Lists
+  parent: linked_list
+  description: Finding node at which two lists intersect by traversing both and switching heads when reaching end.
+  aliases:
+    - intersection of two linked lists
+    - list intersection
+    - find intersection node
+  keywords:
+    - intersection
+    - shared node
+    - switch pointers
+
+- id: copy_list_with_random_pointer
+  name: Copy List with Random Pointer
+  parent: linked_list
+  description: Deep copying a linked list with random pointers using node interleaving or a hash map mapping old to new nodes.
+  aliases:
+    - copy list with random pointer
+    - clone linked list random
+    - deep copy list
+  keywords:
+    - random pointer
+    - deep copy
+    - interleave nodes
+  code_signals:
+    - interleave_cloned_nodes
+
+- id: reorder_list
+  name: Reorder List (Palindrome / Fold)
+  parent: linked_list
+  description: Rearranging a linked list by finding the middle, reversing the second half, and interleaving nodes.
+  aliases:
+    - reorder list
+    - fold linked list
+    - interleave halves
+  keywords:
+    - reorder
+    - middle reverse interleave
+  code_signals:
+    - split_reverse_merge_halves
+

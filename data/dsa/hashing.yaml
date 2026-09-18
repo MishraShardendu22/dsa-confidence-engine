@@ -177,8 +177,8 @@
   description: Counting element occurrences or frequencies using hash maps, arrays, or frequency tables.
   aliases:
     - counting
+    - frequency counting
     - element counter
-    - tallying
   keywords:
     - count
     - occurrences

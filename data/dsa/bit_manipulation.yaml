@@ -46,3 +46,88 @@
     - xor
     - cancel
     - single
+
+- id: brian_kernighan
+  name: Brian Kernighan's Algorithm (Set Bit Counting)
+  parent: bit_manipulation
+  description: Counting set bits in an integer by repeatedly clearing the lowest set bit via n & (n - 1).
+  aliases:
+    - brian kernighan
+    - kernighan algorithm
+    - clear lowest set bit
+    - count set bits
+    - popcount
+    - hamming weight
+  keywords:
+    - brian kernighan
+    - popcount
+    - hamming weight
+    - set bits
+  code_signals:
+    - kernighan_bitwise_and
+
+- id: power_of_two
+  name: Power of Two Check
+  parent: bit_manipulation
+  description: Checking if a number is a power of two using (n > 0) and (n & (n - 1)) == 0.
+  aliases:
+    - power of two
+    - check power of 2
+    - is power of two
+  keywords:
+    - power of two
+    - power of 2
+    - single bit set
+
+- id: reverse_bits
+  name: Reverse Bits
+  parent: bit_manipulation
+  description: Reversing the 32-bit binary representation of an integer using bitwise shifts.
+  aliases:
+    - reverse bits
+    - bit reversal
+    - invert bit order
+  keywords:
+    - reverse bits
+    - shift reverse
+  code_signals:
+    - bit_shift_reverse_loop
+
+- id: submask_enumeration
+  name: Submask Enumeration
+  parent: bit_manipulation
+  description: Iterating over all submasks of a bitmask in O(3^N) using sub = (sub - 1) & mask.
+  aliases:
+    - submask enumeration
+    - iterate submasks
+    - iterate subsets of mask
+  keywords:
+    - submask
+    - submask iteration
+    - 3^n dp
+
+- id: gray_code
+  name: Gray Code
+  parent: bit_manipulation
+  description: Binary numeral system where two successive values differ in only one bit position (i ^ (i >> 1)).
+  aliases:
+    - gray code
+    - reflected binary code
+  keywords:
+    - gray code
+    - single bit difference
+
+- id: count_leading_trailing_zeros
+  name: Bit Scanning (CLZ / CTZ)
+  parent: bit_manipulation
+  description: Counting leading or trailing zero bits using binary search or bitwise masks.
+  aliases:
+    - clz
+    - ctz
+    - count leading zeros
+    - count trailing zeros
+  keywords:
+    - leading zeros
+    - trailing zeros
+    - bit scan
+

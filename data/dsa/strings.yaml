@@ -45,3 +45,93 @@
   keywords:
     - rolling hash
     - rabin karp
+
+- id: manacher_algorithm
+  name: Manacher's Algorithm
+  parent: strings
+  description: Linear time O(N) algorithm finding all palindromic substrings by utilizing symmetry and center-expansion radiuses.
+  aliases:
+    - manacher
+    - manacher algorithm
+    - linear time palindrome
+    - palindrome radius
+  keywords:
+    - manacher
+    - palindrome radius
+    - center boundary
+  code_signals:
+    - manacher_radius_array
+
+- id: z_algorithm
+  name: Z-Algorithm
+  parent: string_matching
+  description: Linear time string algorithm computing the longest common prefix of string S and all its suffixes in O(N).
+  aliases:
+    - z algorithm
+    - z-algorithm
+    - z array
+    - z function
+  keywords:
+    - z algorithm
+    - z-box
+    - lcp prefix
+  code_signals:
+    - z_array_loop
+
+- id: aho_corasick
+  name: Aho-Corasick Automaton
+  parent: string_matching
+  description: Multi-pattern string searching algorithm using a trie with failure links for simultaneous pattern search.
+  aliases:
+    - aho corasick
+    - aho-corasick
+    - multi pattern matching
+    - dictionary automaton
+  keywords:
+    - aho corasick
+    - failure link
+    - dictionary matching
+
+- id: suffix_automaton
+  name: Suffix Automaton (DAWG)
+  parent: strings
+  description: Minimal directed acyclic word graph representing all substrings of a string in linear space.
+  aliases:
+    - suffix automaton
+    - sam
+    - dawg
+  keywords:
+    - suffix automaton
+    - dawg
+    - link transitions
+
+- id: longest_common_prefix
+  name: Longest Common Prefix (LCP)
+  parent: strings
+  description: Finding the longest string that is a prefix to all strings in a collection via vertical scanning or divide-and-conquer.
+  aliases:
+    - longest common prefix
+    - lcp
+    - common prefix
+  keywords:
+    - common prefix
+    - vertical scan
+    - prefix match
+  code_signals:
+    - common_prefix_loop
+
+- id: string_encoding_decoding
+  name: String Serialization and Run-Length Encoding
+  parent: strings
+  description: Compacting, escaping, or framing character streams for transmission or state storage.
+  aliases:
+    - run length encoding
+    - string encoding
+    - string decoding
+    - rle
+  keywords:
+    - encode
+    - decode
+    - rle
+    - escape
+

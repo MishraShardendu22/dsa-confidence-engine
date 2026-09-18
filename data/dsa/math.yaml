@@ -36,3 +36,121 @@
     - modulo
     - power
     - exponentiation
+
+- id: gcd_euclidean
+  name: Greatest Common Divisor (Euclidean Algorithm)
+  parent: math
+  description: Efficient algorithm for computing the greatest common divisor of two integers via gcd(b, a % b).
+  aliases:
+    - gcd
+    - euclidean algorithm
+    - greatest common divisor
+    - hcf
+  keywords:
+    - gcd
+    - divisor
+    - euclidean
+  code_signals:
+    - euclidean_remainder_loop
+
+- id: extended_euclidean
+  name: Extended Euclidean Algorithm
+  parent: math
+  description: Computes Bézout identity coefficients x and y such that a*x + b*y = gcd(a, b) and modular inverse.
+  aliases:
+    - extended euclidean
+    - modular inverse
+    - bezout coefficients
+  keywords:
+    - extended euclidean
+    - modular inverse
+    - bezout
+
+- id: fast_power_exponentiation
+  name: Fast Power Exponentiation (Binary Exponentiation)
+  parent: math
+  description: Calculating x^n in O(log n) time by squaring the base and halving the exponent.
+  aliases:
+    - fast power
+    - binary exponentiation
+    - repeated squaring
+    - pow in log n
+  keywords:
+    - binary exponentiation
+    - repeated squaring
+    - power log n
+  code_signals:
+    - binary_pow_loop
+
+- id: prime_factorization
+  name: Prime Factorization
+  parent: math
+  description: Decomposing an integer into the product of prime numbers in O(sqrt(n)) time.
+  aliases:
+    - prime factorization
+    - prime factors
+    - integer factorization
+  keywords:
+    - prime factors
+    - trial division
+    - decomposition
+
+- id: combinatorics_combinations
+  name: Combinatorics and Binomial Coefficients (nCr)
+  parent: math
+  description: Computing combinations (n choose k) using precomputed factorials and modular inverse.
+  aliases:
+    - combinations
+    - n choose k
+    - ncr
+    - binomial coefficient
+  keywords:
+    - combinations
+    - ncr
+    - choose
+    - factorial
+
+- id: pascal_triangle
+  name: Pascal's Triangle
+  parent: math
+  description: Triangular array of binomial coefficients where each number is the sum of the two numbers directly above it.
+  aliases:
+    - pascal triangle
+    - pascals triangle
+    - additive binomial table
+  keywords:
+    - pascal
+    - triangle
+    - binomial row
+  code_signals:
+    - pascal_triangle_generation
+
+- id: catalan_numbers
+  name: Catalan Numbers
+  parent: math
+  description: Sequence of natural numbers occurring in combinatorial problems such as valid parentheses strings and binary tree counting.
+  aliases:
+    - catalan
+    - catalan number
+    - catalan numbers
+  keywords:
+    - catalan
+    - dyck path
+    - valid parentheses count
+    - full binary trees
+
+- id: matrix_exponentiation
+  name: Matrix Exponentiation
+  parent: math
+  description: Accelerating linear recurrence calculations (like Fibonacci) to O(k^3 log N) time via binary matrix exponentiation.
+  aliases:
+    - matrix exponentiation
+    - matrix power
+    - linear recurrence acceleration
+  keywords:
+    - matrix exponentiation
+    - transition matrix
+    - recurrence log n
+  code_signals:
+    - matrix_multiply_pow
+

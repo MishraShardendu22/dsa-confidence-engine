@@ -47,6 +47,168 @@
   aliases:
     - lowest common ancestor
     - lca
+    - common ancestor
   keywords:
     - ancestor
     - lca
+    - parent node
+  code_signals:
+    - recursive_lca
+
+- id: inorder_traversal
+  name: Inorder Traversal
+  parent: tree_traversal
+  description: Left-Root-Right binary tree traversal producing sorted keys for BSTs.
+  aliases:
+    - inorder
+    - inorder traversal
+    - in-order
+    - in order traversal
+  keywords:
+    - inorder
+    - left root right
+    - bst sorted
+  code_signals:
+    - inorder_dfs
+    - stack_inorder
+
+- id: preorder_traversal
+  name: Preorder Traversal
+  parent: tree_traversal
+  description: Root-Left-Right tree traversal copying or serializing hierarchical structure.
+  aliases:
+    - preorder
+    - preorder traversal
+    - in-preorder
+    - pre order traversal
+  keywords:
+    - preorder
+    - root left right
+  code_signals:
+    - preorder_dfs
+
+- id: postorder_traversal
+  name: Postorder Traversal
+  parent: tree_traversal
+  description: Left-Right-Root bottom-up tree traversal used for deletion and bottom-up DP.
+  aliases:
+    - postorder
+    - postorder traversal
+    - post-order
+    - bottom up traversal
+  keywords:
+    - postorder
+    - left right root
+    - bottom up
+  code_signals:
+    - postorder_dfs
+
+- id: level_order_traversal
+  name: Level Order Traversal (Tree BFS)
+  parent: tree_traversal
+  description: Breadth-first traversal exploring tree level by level using a FIFO queue.
+  aliases:
+    - level order
+    - level order traversal
+    - tree bfs
+    - breadth first tree
+  keywords:
+    - level
+    - queue
+    - deque
+    - tree bfs
+  code_signals:
+    - level_order_queue
+
+- id: morris_traversal
+  name: Morris Inorder/Preorder Traversal
+  parent: tree_traversal
+  description: Threaded binary tree traversal achieving O(1) auxiliary space without recursion or stack.
+  aliases:
+    - morris traversal
+    - morris inorder
+    - threaded binary tree
+    - constant space traversal
+  keywords:
+    - morris
+    - predecessor
+    - threaded
+    - constant space
+  code_signals:
+    - right_threaded_pointer
+
+- id: binary_tree_diameter
+  name: Diameter of Binary Tree
+  parent: trees
+  description: Finding the longest path between any two nodes in a tree using bottom-up depth aggregation.
+  aliases:
+    - diameter of binary tree
+    - tree diameter
+    - longest path in tree
+  keywords:
+    - diameter
+    - longest path
+    - depth
+  code_signals:
+    - postorder_depth_max
+
+- id: serialize_deserialize_tree
+  name: Tree Serialization and Deserialization
+  parent: trees
+  description: Encoding a binary tree into a string format and reconstructing the tree structure from the string.
+  aliases:
+    - serialize tree
+    - deserialize tree
+    - codec tree
+    - encode tree
+  keywords:
+    - serialize
+    - deserialize
+    - preorder string
+    - null marker
+
+- id: binary_lifting_lca
+  name: Binary Lifting LCA
+  parent: lca
+  description: Computing lowest common ancestor and path queries in O(log N) using 2^k ancestor jump tables.
+  aliases:
+    - binary lifting
+    - binary lifting lca
+    - 2^k ancestors
+    - up table lca
+  keywords:
+    - binary lifting
+    - jump table
+    - ancestor
+    - log n lca
+  code_signals:
+    - up_table_2k
+
+- id: maximum_path_sum_tree
+  name: Binary Tree Maximum Path Sum
+  parent: trees
+  description: Dynamic programming on trees to compute the path with the maximum node value sum.
+  aliases:
+    - max path sum
+    - maximum path sum
+    - tree max path
+  keywords:
+    - path sum
+    - max sum
+    - branch gain
+  code_signals:
+    - branch_gain_recursion
+
+- id: flatten_binary_tree
+  name: Flatten Binary Tree to Linked List
+  parent: trees
+  description: Rearranging binary tree nodes in-place into a right-skewed linked list following preorder traversal.
+  aliases:
+    - flatten binary tree
+    - flatten tree
+    - tree to linked list
+  keywords:
+    - flatten
+    - right child chain
+    - in place
+

@@ -1,0 +1,85 @@
+- id: geometry
+  name: Computational Geometry
+  description: Algorithmic problems involving geometric coordinates, vectors, polygons, and spatial points.
+  aliases:
+    - geometry
+    - computational geometry
+    - 2d coordinates
+    - points and lines
+  keywords:
+    - geometry
+    - coordinate
+    - point
+    - polygon
+
+- id: convex_hull_graham_scan
+  name: Convex Hull (Graham Scan / Monotone Chain)
+  parent: geometry
+  description: Finding the smallest convex polygon enclosing a set of 2D points in O(N log N) using cross product turns.
+  aliases:
+    - convex hull
+    - graham scan
+    - monotone chain
+    - andrews algorithm
+  keywords:
+    - convex hull
+    - enclosing polygon
+    - polar sort
+    - cross product turn
+  code_signals:
+    - cross_product_turn_stack
+
+- id: cross_product_orientation
+  name: 2D Cross Product (Orientation Test)
+  parent: geometry
+  description: Determining collinearity, clockwise, or counter-clockwise turn of three 2D points via vector cross products.
+  aliases:
+    - cross product
+    - orientation test
+    - ccw
+    - counter clockwise test
+  keywords:
+    - cross product
+    - orientation
+    - collinear
+    - ccw
+
+- id: line_segment_intersection
+  name: Line Segment Intersection
+  parent: geometry
+  description: Checking whether two 2D line segments intersect using bounding box checks and orientation tests.
+  aliases:
+    - segment intersection
+    - do segments intersect
+    - line intersection
+  keywords:
+    - intersection
+    - segment
+    - on segment
+
+- id: sweep_line_geometry
+  name: Sweep-Line Algorithm (Computational Geometry)
+  parent: geometry
+  description: Event-driven algorithmic paradigm sorting geometric events along one coordinate axis and querying active states.
+  aliases:
+    - sweep line
+    - sweepline
+    - line sweep geometry
+    - event queue sweep
+  keywords:
+    - sweep line
+    - event points
+    - active intervals
+
+- id: closest_pair_of_points
+  name: Closest Pair of Points
+  parent: geometry
+  description: Divide-and-conquer geometric algorithm finding the two points with minimum Euclidean distance in O(N log N).
+  aliases:
+    - closest pair
+    - closest pair of points
+    - minimum distance points
+  keywords:
+    - closest pair
+    - euclidean distance
+    - strip scan
