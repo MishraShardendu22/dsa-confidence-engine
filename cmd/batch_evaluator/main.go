@@ -40,11 +40,11 @@ type FailureRecord struct {
 }
 
 type BatchStats struct {
-	TotalTests       int64
-	TP, TN, FP, FN   int64
-	TotalDurationMs  int64
-	Elapsed          time.Duration
-	Failures         []FailureRecord
+	TotalTests      int64
+	TP, TN, FP, FN  int64
+	TotalDurationMs int64
+	Elapsed         time.Duration
+	Failures        []FailureRecord
 }
 
 func generateSubmissionCode(concept, entrypoint, expectedOutput string) (string, string) {

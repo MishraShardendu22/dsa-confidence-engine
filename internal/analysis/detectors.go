@@ -1965,5 +1965,3 @@ func (d *UnionFindDetector) Detect(
 
 	return concepts
 }
-
-

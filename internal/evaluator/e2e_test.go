@@ -85,10 +85,10 @@ func assertTestFail(t *testing.T, res *model.Evaluation, ctx string) {
 // ─── Problem definitions ──────────────────────────────────────────────────────
 
 var probBinarySearchBasic = model.Problem{
-	ID:         "binary_search_basic",
-	Title:      "Binary Search",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "binary_search_basic",
+	Title:             "Binary Search",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"search", "binary_search", "binarySearch"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [-1, 0, 3, 5, 9, 12], "target": 9}`, ExpectedOutput: "4"},
@@ -104,10 +104,10 @@ var probBinarySearchBasic = model.Problem{
 }
 
 var probCoinChange = model.Problem{
-	ID:         "coin_change",
-	Title:      "Coin Change",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "coin_change",
+	Title:             "Coin Change",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"coinChange", "coin_change"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"coins": [1, 5, 11], "amount": 15}`, ExpectedOutput: "3"},
@@ -121,10 +121,10 @@ var probCoinChange = model.Problem{
 }
 
 var probLIS = model.Problem{
-	ID:         "longest_increasing_subsequence",
-	Title:      "Longest Increasing Subsequence",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "longest_increasing_subsequence",
+	Title:             "Longest Increasing Subsequence",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"lengthOfLIS", "lis"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [10, 9, 2, 5, 3, 7, 101, 18]}`, ExpectedOutput: "4"},
@@ -138,10 +138,10 @@ var probLIS = model.Problem{
 }
 
 var probLCS = model.Problem{
-	ID:         "longest_common_subsequence",
-	Title:      "Longest Common Subsequence",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "longest_common_subsequence",
+	Title:             "Longest Common Subsequence",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"longestCommonSubsequence"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"text1": "abcde", "text2": "ace"}`, ExpectedOutput: "3"},
@@ -154,10 +154,10 @@ var probLCS = model.Problem{
 }
 
 var probHouseRobber = model.Problem{
-	ID:         "house_robber",
-	Title:      "House Robber",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "house_robber",
+	Title:             "House Robber",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"rob", "house_robber"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [1, 2, 3, 1]}`, ExpectedOutput: "4"},
@@ -170,10 +170,10 @@ var probHouseRobber = model.Problem{
 }
 
 var probValidParens = model.Problem{
-	ID:         "valid_parentheses",
-	Title:      "Valid Parentheses",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "valid_parentheses",
+	Title:             "Valid Parentheses",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"isValid", "is_valid"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"s": "()"}`, ExpectedOutput: "true"},
@@ -188,10 +188,10 @@ var probValidParens = model.Problem{
 }
 
 var probThreeSum = model.Problem{
-	ID:         "three_sum",
-	Title:      "3Sum",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "three_sum",
+	Title:             "3Sum",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"threeSum", "three_sum"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [-1, 0, 1, 2, -1, -4]}`, ExpectedOutput: "[[-1, -1, 2], [-1, 0, 1]]"},
@@ -204,10 +204,10 @@ var probThreeSum = model.Problem{
 }
 
 var probSingleNumber = model.Problem{
-	ID:         "single_number",
-	Title:      "Single Number",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "single_number",
+	Title:             "Single Number",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"singleNumber", "single_number"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [2, 2, 1]}`, ExpectedOutput: "1"},
@@ -220,10 +220,10 @@ var probSingleNumber = model.Problem{
 }
 
 var probNumIslands = model.Problem{
-	ID:         "number_of_islands",
-	Title:      "Number of Islands",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "number_of_islands",
+	Title:             "Number of Islands",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"numIslands", "num_islands"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"grid": [["1","1","1","1","0"],["1","1","0","1","0"],["1","1","0","0","0"],["0","0","0","0","0"]]}`, ExpectedOutput: "1"},
@@ -236,10 +236,10 @@ var probNumIslands = model.Problem{
 }
 
 var probJumpGame = model.Problem{
-	ID:         "jump_game",
-	Title:      "Jump Game",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "jump_game",
+	Title:             "Jump Game",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"canJump", "can_jump"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [2, 3, 1, 1, 4]}`, ExpectedOutput: "true"},
@@ -251,10 +251,10 @@ var probJumpGame = model.Problem{
 }
 
 var probGroupAnagrams = model.Problem{
-	ID:         "group_anagrams",
-	Title:      "Group Anagrams",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "group_anagrams",
+	Title:             "Group Anagrams",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"groupAnagrams", "group_anagrams"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"strs": ["eat", "tea", "tan", "ate", "nat", "bat"]}`, ExpectedOutput: `[["ate", "eat", "tea"], ["bat"], ["nat", "tan"]]`},
@@ -266,10 +266,10 @@ var probGroupAnagrams = model.Problem{
 }
 
 var probMaxSubarray = model.Problem{
-	ID:         "maximum_subarray",
-	Title:      "Maximum Subarray",
-	Language:   "python",
-	Entrypoint: "solve",
+	ID:                "maximum_subarray",
+	Title:             "Maximum Subarray",
+	Language:          "python",
+	Entrypoint:        "solve",
 	EntrypointAliases: []string{"maxSubArray", "kadane"},
 	Tests: []model.TestCase{
 		{ID: "1", Input: `{"nums": [-2, 1, -3, 4, -1, 2, 1, -5, 4]}`, ExpectedOutput: "6"},
@@ -1061,11 +1061,11 @@ func TestE2E_DetectorCoverage(t *testing.T) {
 	ctx := context.Background()
 
 	type tc struct {
-		name      string
-		prob      model.Problem
-		code      string
-		expl      string
-		wantPass  bool
+		name         string
+		prob         model.Problem
+		code         string
+		expl         string
+		wantPass     bool
 		wantConcepts []string
 	}
 
@@ -1094,8 +1094,8 @@ def solve(nums):
         seen[n] = True
     return len(seen)
 `,
-			expl:      "I use a hashmap to count elements.",
-			wantPass:  true,
+			expl:         "I use a hashmap to count elements.",
+			wantPass:     true,
 			wantConcepts: []string{"hashmap"},
 		},
 		// HashSet detection
@@ -1352,10 +1352,10 @@ def solve(nums, target):
 func TestE2E_EdgeCases(t *testing.T) {
 	t.Run("binary search single element found", func(t *testing.T) {
 		prob := model.Problem{
-			ID:         "bs_single",
-			Language:   "python",
-			Entrypoint: "solve",
-			Tests:      []model.TestCase{{ID: "1", Input: `{"nums": [42], "target": 42}`, ExpectedOutput: "0"}},
+			ID:              "bs_single",
+			Language:        "python",
+			Entrypoint:      "solve",
+			Tests:           []model.TestCase{{ID: "1", Input: `{"nums": [42], "target": 42}`, ExpectedOutput: "0"}},
 			PrimaryConcepts: []string{"binary_search"},
 		}
 		code := `
@@ -1379,10 +1379,10 @@ def solve(nums, target):
 
 	t.Run("coin change zero amount edge case", func(t *testing.T) {
 		prob := model.Problem{
-			ID:         "cc_zero",
-			Language:   "python",
-			Entrypoint: "solve",
-			Tests:      []model.TestCase{{ID: "1", Input: `{"coins": [1,5], "amount": 0}`, ExpectedOutput: "0"}},
+			ID:              "cc_zero",
+			Language:        "python",
+			Entrypoint:      "solve",
+			Tests:           []model.TestCase{{ID: "1", Input: `{"coins": [1,5], "amount": 0}`, ExpectedOutput: "0"}},
 			PrimaryConcepts: []string{"dynamic_programming"},
 		}
 		code := `
@@ -1402,10 +1402,10 @@ def solve(coins, amount):
 
 	t.Run("valid parentheses empty string edge case", func(t *testing.T) {
 		prob := model.Problem{
-			ID:         "vp_empty",
-			Language:   "python",
-			Entrypoint: "solve",
-			Tests:      []model.TestCase{{ID: "1", Input: `{"s": ""}`, ExpectedOutput: "true"}},
+			ID:              "vp_empty",
+			Language:        "python",
+			Entrypoint:      "solve",
+			Tests:           []model.TestCase{{ID: "1", Input: `{"s": ""}`, ExpectedOutput: "true"}},
 			PrimaryConcepts: []string{"stack"},
 		}
 		code := `
@@ -1429,10 +1429,10 @@ def solve(s):
 
 	t.Run("graph no edges single node", func(t *testing.T) {
 		prob := model.Problem{
-			ID:         "ni_single",
-			Language:   "python",
-			Entrypoint: "solve",
-			Tests:      []model.TestCase{{ID: "1", Input: `{"grid": [["1"]]}`, ExpectedOutput: "1"}},
+			ID:              "ni_single",
+			Language:        "python",
+			Entrypoint:      "solve",
+			Tests:           []model.TestCase{{ID: "1", Input: `{"grid": [["1"]]}`, ExpectedOutput: "1"}},
 			PrimaryConcepts: []string{"dfs"},
 		}
 		code := `
@@ -1464,10 +1464,10 @@ def solve(grid):
 
 func TestE2E_SlidingWindow(t *testing.T) {
 	minWindowProb := model.Problem{
-		ID:         "minimum_window_substring",
-		Title:      "Minimum Window Substring",
-		Language:   "python",
-		Entrypoint: "solve",
+		ID:                "minimum_window_substring",
+		Title:             "Minimum Window Substring",
+		Language:          "python",
+		Entrypoint:        "solve",
 		EntrypointAliases: []string{"minWindow", "min_window"},
 		Tests: []model.TestCase{
 			{ID: "1", Input: `{"s": "ADOBECODEBANC", "t": "ABC"}`, ExpectedOutput: "BANC"},
@@ -1544,10 +1544,10 @@ def solve(s, t):
 
 func TestE2E_Trie(t *testing.T) {
 	prob := model.Problem{
-		ID:         "implement_trie",
-		Title:      "Implement Trie",
-		Language:   "python",
-		Entrypoint: "solve",
+		ID:                "implement_trie",
+		Title:             "Implement Trie",
+		Language:          "python",
+		Entrypoint:        "solve",
 		EntrypointAliases: []string{"trie_operations"},
 		Tests: []model.TestCase{
 			{ID: "1", Input: `{"operations": ["insert", "search", "search", "startsWith", "insert", "search"], "args": ["apple", "apple", "app", "app", "app", "app"]}`, ExpectedOutput: "[null, true, false, true, null, true]"},
@@ -1614,9 +1614,9 @@ def solve(operations, args):
 
 func TestE2E_Heap(t *testing.T) {
 	prob := model.Problem{
-		ID:         "top_k_frequent_elements",
-		Language:   "python",
-		Entrypoint: "solve",
+		ID:                "top_k_frequent_elements",
+		Language:          "python",
+		Entrypoint:        "solve",
 		EntrypointAliases: []string{"topKFrequent", "top_k_frequent"},
 		Tests: []model.TestCase{
 			{ID: "1", Input: `{"nums": [1, 1, 1, 2, 2, 3], "k": 2}`, ExpectedOutput: "[1, 2]"},
