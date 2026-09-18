@@ -15,6 +15,11 @@ import time
 import urllib.request
 import yaml
 
+try:
+    from scripts.analyze_approaches import deduce_problem_approaches
+except ImportError:
+    from analyze_approaches import deduce_problem_approaches
+
 TAG_TO_DSA_CONCEPTS = {
     "array": ["arrays"],
     "hash-table": ["hashmap"],
@@ -138,21 +143,21 @@ def build_problem_record(raw_q):
     topic_tags = [t["slug"] for t in raw_tags if "slug" in t]
 
     primary_concepts = []
-    accepted_strategies = []
-
     for tag in topic_tags:
         if tag in TAG_TO_DSA_CONCEPTS:
             for c in TAG_TO_DSA_CONCEPTS[tag]:
                 if c not in primary_concepts:
                     primary_concepts.append(c)
-        strat = tag.replace("-", "_") + "_approach"
-        if strat not in accepted_strategies:
-            accepted_strategies.append(strat)
 
     if not primary_concepts:
         primary_concepts = ["arrays"]
-    if not accepted_strategies:
-        accepted_strategies = ["optimal_approach", "iterative_solution"]
+
+    accepted_strategies = deduce_problem_approaches({
+        "id": problem_id,
+        "title": title,
+        "topic_tags": topic_tags,
+        "difficulty": difficulty
+    })
 
     entrypoint = camel_id
     aliases = list(dict.fromkeys([camel_id, snake_id, "solve", "solution"]))
