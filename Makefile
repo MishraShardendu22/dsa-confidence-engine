@@ -1,4 +1,4 @@
-.PHONY: all build run test test-race test-coverage clean templ help
+.PHONY: all build run test test-race test-coverage clean templ help fmt fmt-check vet tidy-check pre-commit
 
 # Binary name
 BINARY_NAME=server
@@ -9,6 +9,33 @@ GOPATH=$(shell go env GOPATH)
 TEMPL_BIN=$(GOPATH)/bin/templ
 
 all: build
+
+fmt: ## Automatically format all Go files using gofmt
+	gofmt -w .
+
+fmt-check: ## Verify all Go files are gofmt-formatted (mirrors CI go-lint)
+	@UNFORMATTED=$$(gofmt -l .); \
+	if [ -n "$$UNFORMATTED" ]; then \
+		echo "The following files are not gofmt-formatted:"; \
+		echo "$$UNFORMATTED"; \
+		echo "Run 'make fmt' or 'gofmt -w .' locally to fix."; \
+		exit 1; \
+	fi; \
+	echo "All Go files are correctly formatted."
+
+vet: ## Run go vet across all packages
+	$(GO) vet ./...
+
+tidy-check: ## Verify go.mod and go.sum are tidy (mirrors CI go-build check)
+	@$(GO) mod tidy; \
+	if ! git diff --exit-code go.mod go.sum; then \
+		echo "go.mod/go.sum are not tidy. Run 'go mod tidy' locally."; \
+		exit 1; \
+	fi; \
+	echo "go.mod and go.sum are tidy."
+
+pre-commit: fmt-check vet tidy-check templ test-race build ## Full local CI mirror gate; must pass before committing or pushing
+	@echo "All pre-commit and CI verification checks passed successfully."
 
 templ: ## Generate Go code from Templ templates
 	@if command -v templ >/dev/null 2>&1; then \

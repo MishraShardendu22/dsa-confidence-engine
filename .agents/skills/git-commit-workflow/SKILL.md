@@ -203,18 +203,16 @@ All commits in repositories adhering to this standard MUST be classified under o
 
 ## 6. Pre-Commit Validation Checklist
 
-Before staging files or creating a local commit, verify that the code passes validation:
+Before staging files or creating a local commit, the contributor or AI agent MUST run the full local CI mirror gate and guarantee 100% pass rate:
 
 ```bash
-# Unified pre-commit validation gate
+# Mandatory local CI validation gate (mirrors GitHub Actions CI: gofmt, vet, tidy, test-race, build)
 make pre-commit
-
-# Or individual verifications:
-make lint
-make typecheck
-make test
-make build
 ```
+
+> [!CAUTION]
+> **PROHIBITION ON COMMITTING WITH FAILING CHECKS**:
+> If `make pre-commit` reports any formatting drift (`gofmt`), uncommitted module changes (`go mod tidy`), race condition failures, or compilation errors, **never commit or push**. Fix all defects immediately and re-run `make pre-commit` until clean.
 
 ---
 
