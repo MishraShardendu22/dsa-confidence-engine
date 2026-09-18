@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/analysis"
@@ -189,5 +191,111 @@ def solve(nums, target):
 	}
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestControllerValidationAndErrors(t *testing.T) {
+	app, _ := setupTestApp(t)
+
+	// 1. Problem not found -> 404
+	req := httptest.NewRequest(http.MethodGet, "/api/problems/non_existent", nil)
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
+	}
+
+	// 2. Evaluation not found -> 404
+	req = httptest.NewRequest(http.MethodGet, "/api/evaluations/non_existent", nil)
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
+	}
+
+	// 3. Problem creation validation failure (empty ID) -> 400
+	invalidProb := model.Problem{Title: "Missing ID", Entrypoint: "solve"}
+	probBytes, _ := json.Marshal(invalidProb)
+	req = httptest.NewRequest(http.MethodPost, "/api/problems", bytes.NewReader(probBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+
+	// 3b. Problem creation validation failure (empty Tests) -> 400
+	noTestsProb := model.Problem{ID: "no_tests", Title: "No Tests", Entrypoint: "solve", Tests: []model.TestCase{}}
+	noTestsBytes, _ := json.Marshal(noTestsProb)
+	req = httptest.NewRequest(http.MethodPost, "/api/problems", bytes.NewReader(noTestsBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty tests, got %d", resp.StatusCode)
+	}
+
+	// 4. Evaluate API validation failure (missing source code) -> 400
+	invalidSub := model.Submission{ProblemID: "two_sum", SourceCode: ""}
+	subBytes, _ := json.Marshal(invalidSub)
+	req = httptest.NewRequest(http.MethodPost, "/api/evaluate", bytes.NewReader(subBytes))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+
+	// 5. Web form evaluate validation failure (missing problem_id) -> 400
+	form := url.Values{}
+	form.Set("problem_id", "")
+	form.Set("source_code", "def solve(): pass")
+	req = httptest.NewRequest(http.MethodPost, "/evaluate", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", resp.StatusCode)
+	}
+
+	// 6. Web form evaluate valid submission -> 302 Redirect
+	form = url.Values{}
+	form.Set("problem_id", "two_sum")
+	form.Set("source_code", "def solve(nums, target): return [0, 1]")
+	form.Set("explanation", "I used brute force")
+	req = httptest.NewRequest(http.MethodPost, "/evaluate", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	resp, err = app.Test(req, 5000)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusFound {
+		t.Errorf("expected 302 Found, got %d", resp.StatusCode)
+	}
+	loc := resp.Header.Get("Location")
+	if !strings.HasPrefix(loc, "/evaluation/") {
+		t.Errorf("expected redirect to /evaluation/:id, got %s", loc)
+	}
+
+	// 7. Web GET /evaluation/:id for non-existent -> 404
+	req = httptest.NewRequest(http.MethodGet, "/evaluation/non_existent", nil)
+	resp, err = app.Test(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", resp.StatusCode)
 	}
 }

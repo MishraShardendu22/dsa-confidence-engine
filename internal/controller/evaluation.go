@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"errors"
+
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/api"
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/model"
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/service"
@@ -38,7 +40,7 @@ func (ctrl *EvaluationController) Get(c *fiber.Ctx) error {
 	id := c.Params("id")
 	eval, err := ctrl.svc.GetEvaluation(c.Context(), id)
 	if err != nil {
-		if err == util.ErrEvaluationNotFound {
+		if errors.Is(err, util.ErrEvaluationNotFound) {
 			return api.Error(c, fiber.StatusNotFound, "NOT_FOUND", "Evaluation not found")
 		}
 		return api.Error(c, fiber.StatusInternalServerError, "INTERNAL_ERROR", err.Error())

@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"errors"
+
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/api"
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/model"
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/service"
@@ -28,7 +30,7 @@ func (ctrl *ProblemController) Get(c *fiber.Ctx) error {
 	id := c.Params("id")
 	p, err := ctrl.svc.GetProblem(c.Context(), id)
 	if err != nil {
-		if err == util.ErrProblemNotFound {
+		if errors.Is(err, util.ErrProblemNotFound) {
 			return api.Error(c, fiber.StatusNotFound, "NOT_FOUND", "Problem not found")
 		}
 		return api.Error(c, fiber.StatusInternalServerError, "INTERNAL_ERROR", err.Error())
@@ -44,6 +46,10 @@ func (ctrl *ProblemController) Create(c *fiber.Ctx) error {
 
 	if p.ID == "" || p.Title == "" || p.Entrypoint == "" {
 		return api.Error(c, fiber.StatusBadRequest, "VALIDATION_FAILED", "Problem ID, title, and entrypoint are required")
+	}
+
+	if len(p.Tests) == 0 {
+		return api.Error(c, fiber.StatusBadRequest, "VALIDATION_FAILED", "At least one test case is required")
 	}
 
 	if err := ctrl.svc.CreateProblem(c.Context(), &p); err != nil {

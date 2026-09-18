@@ -36,8 +36,7 @@ func (s *EvaluationService) Evaluate(ctx context.Context, sub model.Submission) 
 	}
 
 	if err := s.repo.SaveEvaluation(ctx, eval); err != nil {
-		// Log warning but return evaluation object
-		fmt.Printf("[WARN] failed to persist evaluation %s: %v\n", eval.ID, err)
+		return nil, fmt.Errorf("failed to save evaluation: %w", err)
 	}
 
 	return eval, nil

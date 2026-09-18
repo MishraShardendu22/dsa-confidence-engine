@@ -63,6 +63,9 @@ func RegisterRoutes(app *fiber.App, cfg RouterConfig) {
 			Explanation: c.FormValue("explanation"),
 			SourceCode:  c.FormValue("source_code"),
 		}
+		if sub.ProblemID == "" || sub.SourceCode == "" {
+			return c.Status(fiber.StatusBadRequest).SendString("problem_id and source_code are required")
+		}
 		eval, err := cfg.EvaluationService.Evaluate(c.Context(), sub)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).SendString(err.Error())

@@ -2,6 +2,7 @@ package evaluator
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/MishraShardendu22/dsa-confidence-engine/internal/analysis"
@@ -98,6 +99,13 @@ func (e *Evaluator) Evaluate(
 	})
 	if err != nil {
 		return nil, err
+	}
+	if analysisRes.Status == "ERROR" || analysisRes.Status == "UNKNOWN" {
+		errMsg := analysisRes.Error
+		if errMsg == "" {
+			errMsg = "Static code analysis failed to extract AST from submission"
+		}
+		return nil, fmt.Errorf("analysis failed: %s", errMsg)
 	}
 
 	// 3. Run Point B (Claimed concepts from explanation)

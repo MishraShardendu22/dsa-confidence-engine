@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -71,27 +72,33 @@ func getEnv(key, defaultVal string) string {
 
 func getEnvInt(key string, defaultVal int) int {
 	if val := os.Getenv(key); val != "" {
-		if intVal, err := strconv.Atoi(val); err == nil {
+		intVal, err := strconv.Atoi(val)
+		if err == nil {
 			return intVal
 		}
+		log.Printf("[WARN] invalid integer value %q for %s, falling back to default %d: %v", val, key, defaultVal, err)
 	}
 	return defaultVal
 }
 
 func getEnvFloat(key string, defaultVal float64) float64 {
 	if val := os.Getenv(key); val != "" {
-		if floatVal, err := strconv.ParseFloat(val, 64); err == nil {
+		floatVal, err := strconv.ParseFloat(val, 64)
+		if err == nil {
 			return floatVal
 		}
+		log.Printf("[WARN] invalid float value %q for %s, falling back to default %f: %v", val, key, defaultVal, err)
 	}
 	return defaultVal
 }
 
 func getEnvBool(key string, defaultVal bool) bool {
 	if val := os.Getenv(key); val != "" {
-		if boolVal, err := strconv.ParseBool(val); err == nil {
+		boolVal, err := strconv.ParseBool(val)
+		if err == nil {
 			return boolVal
 		}
+		log.Printf("[WARN] invalid boolean value %q for %s, falling back to default %t: %v", val, key, defaultVal, err)
 	}
 	return defaultVal
 }
