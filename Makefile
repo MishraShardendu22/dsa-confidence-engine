@@ -1,4 +1,4 @@
-.PHONY: all build run test test-race test-coverage clean templ help fmt fmt-check vet tidy-check pre-commit
+.PHONY: all build run test test-race test-coverage clean templ help fmt fmt-check vet tidy-check pre-commit test-e2e eval-sample eval-batch eval-4k
 
 # Binary name
 BINARY_NAME=server
@@ -66,9 +66,21 @@ test-coverage: templ ## Run tests and generate HTML coverage report
 	$(GO) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report generated at coverage.html"
 
+test-e2e: ## Run end-to-end evaluation tests against an ephemeral server
+	./scripts/test_engine.sh
+
+eval-sample: ## Run batch evaluation on a fast 50-problem sample (~3 seconds)
+	$(GO) run ./cmd/batch_evaluator -start 0 -limit 50 -workers 32
+
+eval-batch: ## Run batch evaluation on 200 problems (1,000 evaluations)
+	$(GO) run ./cmd/batch_evaluator -start 0 -limit 200 -workers 32
+
+eval-4k: ## Run full catalog evaluation across all 4,052 problems (20,260 evaluations)
+	$(GO) run ./cmd/batch_evaluator -all -limit 200 -workers 48
+
 clean: ## Remove build artifacts and temporary databases
-	rm -f $(BINARY_NAME) coverage.out coverage.html
-	rm -f *.db *.db-journal data/*.db data/*.db-journal
+	rm -f $(BINARY_NAME) test_server coverage.out coverage.html
+	rm -f *.db* data/*.db*
 	rm -rf scripts/__pycache__ **/__pycache__ *.pyc
 	@echo "Clean complete."
 
@@ -76,4 +88,4 @@ help: ## Display available Makefile targets
 	@echo "Usage: make [target]"
 	@echo ""
 	@echo "Targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'

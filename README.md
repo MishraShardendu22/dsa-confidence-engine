@@ -84,44 +84,91 @@ The ontology lives in modular YAML files (`data/dsa/*.yaml`) across 29 categorie
 
 ---
 
-## 3. How to Run
+---
+
+## 3. Human Quickstart & Testing Runbook
 
 ### Prerequisites
-- Go 1.25+ or Go 1.26+
-- Python 3.10+
-- `templ` CLI (`go install github.com/a-h/templ/cmd/templ@latest`)
+- **Go**: 1.24+ (tested on Go 1.25 / 1.26)
+- **Python**: 3.10+ (for local sandbox and AST analyzer)
+- **templ CLI**: `go install github.com/a-h/templ/cmd/templ@latest` (auto-installed via `make templ`)
+- **jq** and **curl**: (standard on Linux/macOS)
 
-### Quick Start with Make
+---
+
+### One-Command Quickstarts
+
+| Action | Command | What It Does |
+| :--- | :--- | :--- |
+| **Start Server** | `make run` | Compiles Templ UI and starts server on `http://localhost:8080` |
+| **One-Click E2E Test** | `make test-e2e` | Spins up an ephemeral server, executes 3 archetypes, and prints results |
+| **Fast 50-Problem Sample** | `make eval-sample` | Evaluates 250 submissions across 50 problems in ~3.5 seconds |
+| **Full 200-Problem Batch** | `make eval-batch` | Evaluates 1,000 submissions across 200 problems in ~15 seconds |
+| **Full 4,052 Problem Catalog** | `make eval-4k` | Runs all 20,260 submissions across 4,052 problems (~6 minutes) |
+| **Local CI Verification Gate** | `make pre-commit` | Runs formatting check, static analysis, race-safe unit tests, and build |
+| **View All Targets** | `make help` | Displays all formatted Makefile targets |
+
+---
+
+### Manual Testing with `curl`
+
+When the server is running (`make run` on port `8080`), you can evaluate any code submission directly from your terminal:
+
+#### 1. Valid Candidate (Fast-Path Exact Match)
 ```bash
-# Generate templates and start the application
+curl -s -X POST http://localhost:8080/api/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "problem_id": "two_sum",
+    "source_code": "def solve(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        diff = target - n\n        if diff in seen:\n            return [seen[diff], i]\n        seen[n] = i\n    return []\n",
+    "explanation": "I used a hashmap to store numbers and indices, checking for complements in O(1) time."
+  }' | jq '.data | {decision, fidelity_score, test_result, actual: [.actual_concepts[].id], claimed: [.claimed_concepts[].id]}'
+```
+**Expected Response**: `decision: "ACCEPT"`, `fidelity_score: 1.0`, `test_result: "PASS"`.
+
+#### 2. Colloquial Vernacular (Hybrid Escalation)
+```bash
+curl -s -X POST http://localhost:8080/api/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "problem_id": "two_sum",
+    "source_code": "def solve(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        diff = target - n\n        if diff in seen:\n            return [seen[diff], i]\n        seen[n] = i\n    return []\n",
+    "explanation": "I stored previously visited elements in a dictionary lookup to check if the complement was already seen."
+  }' | jq '.data | {decision, fidelity_score, test_result, reason}'
+```
+**Expected Response**: `decision: "ACCEPT"`, `fidelity_score: 1.0`.
+
+#### 3. Adversarial Cheating / Bluffing Attempt
+```bash
+curl -s -X POST http://localhost:8080/api/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "problem_id": "two_sum",
+    "source_code": "def solve(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        diff = target - n\n        if diff in seen:\n            return [seen[diff], i]\n        seen[n] = i\n    return []\n",
+    "explanation": "I constructed a directed weighted graph and executed Dijkstra shortest path algorithm with a priority queue."
+  }' | jq '.data | {decision, fidelity_score, missing: [.missing_concepts[].concept_id], reason}'
+```
+**Expected Response**: `decision: "REJECT"`, `fidelity_score: 0.0`, `missing: ["dijkstra", "graphs", "heap"]`.
+
+---
+
+### Optional Remote LLM & Embedding Configuration
+
+By default, the engine runs completely offline with zero local model weights and zero external API dependencies using the deterministic `LocalHashingEmbedder`.
+
+To connect to remote OpenAI, LiteLLM, Ollama, or Gemini endpoints:
+```bash
+export EMBEDDING_PROVIDER="remote"
+export EMBEDDING_ENDPOINT="https://api.openai.com/v1/embeddings"
+export EMBEDDING_API_KEY="your-api-key"
+export LLM_ENABLED="true"
+export LLM_PROVIDER="remote"
+export LLM_ENDPOINT="https://api.openai.com/v1/chat/completions"
+export LLM_API_KEY="your-api-key"
+export LLM_MODEL="gpt-4o-mini"
+
 make run
-
-# Run full automated test suite
-make test
-
-# Run tests with race detector
-make test-race
-
-# Build production binary
-make build
-
-# View all available targets
-make help
 ```
-
-### Manual Build and Launch
-```bash
-# 1. Compile Templ templates
-templ generate
-
-# 2. Build the server binary
-go build -o server ./cmd/server
-
-# 3. Start the application
-./server
-```
-
-The web interface will be accessible at `http://localhost:8080`.
 
 ---
 
